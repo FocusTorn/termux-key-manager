@@ -46,7 +46,7 @@
 
         "CLR": {
             "shell": "clr",
-            "display": "❌",
+            "display": "⌫",
 
             "popup": {
                 "display": "♻ ↺",
@@ -73,7 +73,7 @@
             },
 
             
-            "holder": "⧠ ⧉ 📋 ⚼ ❐ 🗃 📋 ⟏ ⍉ 🔳  ⍉ 📝  🚫 💥 🧾 ❌ 🛇 💢"
+            "holder": "⎌ ⎋  🛑 ⧠ ⧉ 📋 ⚼ ❐ 🗃 📋 ⟏ ⍉ 🔳  ⍉ 📝  🚫 💥 🧾 ❌ 🛇 💢"
         },
     
         " ": {
@@ -84,8 +84,8 @@
     },
 
     "layout": [
-        [ "TAB"  , " "   , " "   , " "       , " "  , " "    ],
-        [ "SHFT" , "CLR" , "PST" , "CPY_ALL" , "UP" , " " ],
-        [ "CTRL" , "ALT" , "UDO" , "LT"      , "DN" , "RT"   ]
+        [ "TAB"  , " "       , " "   , " "  , " "  , " "   ],
+        [ "SHFT" , "CPY_ALL" , " "   , "PST", "UP" , "CLR" ],
+        [ "CTRL" , "ALT"     , "UDO" , "LT" , "DN" , "RT"  ]
     ]
 }
