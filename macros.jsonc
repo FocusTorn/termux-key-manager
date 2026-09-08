@@ -1,0 +1,91 @@
+{
+    "definitions": {
+
+        "CTRL": {
+            "key": "CTRL"
+        },
+
+        "TAB": {
+            "display": "⮕▏",
+            "key": "TAB"
+        },
+
+        "SHFT": {
+            "display": "SHFT",
+            "key": "SHIFT"
+        },
+
+        "ALT": {
+            "key": "ALT"
+        },
+
+        "UDO": {
+            "display": "⤺",
+            "macro": "\u001F"
+        },
+
+        "UP": {
+            "key": "UP",
+            "popup": "PGUP"
+        },
+
+        "DN": {
+            "key": "DOWN",
+            "popup": "PGDN"
+        },
+
+        "LT": {
+            "key": "LEFT",
+            "popup": "HOME"
+        },
+
+        "RT": {
+            "key": "RIGHT",
+            "popup": "END"
+        },
+
+        "CLR": {
+            "shell": "clr",
+            "display": "❌",
+
+            "popup": {
+                "display": "♻ ↺",
+                "shell": "refresh"
+            }
+        },
+
+        "CPY_ALL": {
+            "display": "📑",
+            "shell": "cpy_all",
+
+            "popup": {
+                "display": "COPY",
+                "shell": "cpy"
+            }
+        },
+
+        "PST": {
+            "display": "⧉ ⤶",
+            "macro": "PASTE ENTER",
+
+            "popup": {
+                "key": "PASTE"
+            },
+
+            
+            "holder": "⧠ ⧉ 📋 ⚼ ❐ 🗃 📋 ⟏ ⍉ 🔳  ⍉ 📝  🚫 💥 🧾 ❌ 🛇 💢"
+        },
+    
+        " ": {
+            "display": " ",
+            "macro": ""
+        }
+            
+    },
+
+    "layout": [
+        [ "TAB"  , " "   , " "   , " "       , " "  , " "    ],
+        [ "SHFT" , "CLR" , "PST" , "CPY_ALL" , "UP" , " " ],
+        [ "CTRL" , "ALT" , "UDO" , "LT"      , "DN" , "RT"   ]
+    ]
+}
