@@ -1,12 +1,22 @@
 {
     "definitions": {
 
+        "?": {
+            "display": "?",
+            "macro": "CTRL b n"
+        },
+
+
+
+
+
+
         "CTRL": {
             "key": "CTRL"
         },
 
         "TAB": {
-            "display": "⮕▏",
+            "display": "⮕Ⅰ",
             "key": "TAB"
         },
 
@@ -65,27 +75,26 @@
         },
 
         "PST": {
-            "display": "⧉ ⤶",
+            "display": "⧉➠",
             "macro": "PASTE ENTER",
 
             "popup": {
                 "key": "PASTE"
             },
 
-            
+
             "holder": "⎌ ⎋  🛑 ⧠ ⧉ 📋 ⚼ ❐ 🗃 📋 ⟏ ⍉ 🔳  ⍉ 📝  🚫 💥 🧾 ❌ 🛇 💢"
         },
-    
+
         " ": {
             "display": " ",
             "macro": ""
         }
-            
+
     },
 
     "layout": [
-        [ "TAB"  , " "       , " "   , " "  , " "  , " "   ],
-        [ "SHFT" , "CPY_ALL" , " "   , "PST", "UP" , "CLR" ],
-        [ "CTRL" , "ALT"     , "UDO" , "LT" , "DN" , "RT"  ]
+        [ "SHFT", "UDO", "CPY_ALL" , "CLR", " ", " "  , "UP", " "  ],
+        [ "CTRL", "ALT", "TAB"     , "PST", " ", "LT" , "DN", "RT" ]
     ]
 }
