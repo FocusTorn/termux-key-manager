@@ -181,6 +181,7 @@ refresh() {{
         fi
 
     fi
+    source ~/.bashrc
 }}
 
 
