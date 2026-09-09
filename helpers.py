@@ -126,7 +126,7 @@ export HISTIGNORE='{histignore}'
 _tmk_is_helper() {{
 
     case "$1" in
-        cpy|cpy\\ *|cpy_all|refresh|clr)
+        cpy|cpy\\ *|cpy_all|cpy_out|cpy_out\\ *|refresh|clr)
             return 0
             ;;
         *)
@@ -204,7 +204,8 @@ cpy_all() {{
 
 cpy_out() {{
 
-    printf '%s\\n' "$TMK_LAST_OUTPUT" |
+    printf '%s' "$TMK_LAST_OUTPUT" |
+        sed ':a;/^[[:space:]]*$/{{$d;N;ba;}}' |
         termux-clipboard-set
 }}
 
