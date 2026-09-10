@@ -76,7 +76,7 @@
 
         "CPY_OUT": {
             "display": "💬",
-            "shell": "cpy_out"
+            "shell": "cpy out"
         },
 
         "PST": {

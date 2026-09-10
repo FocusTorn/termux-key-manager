@@ -229,53 +229,6 @@ _tmk_recorder_install
 TMK_SESSION_INITIALIZING=0
 
 
-_tmk_is_helper() {{
-
-    case "$1" in
-        cpy|cpy\\ *|cpy_all|cpy_out|cpy_out\\ *|refresh|clr)
-            return 0
-            ;;
-        *)
-            return 1
-            ;;
-    esac
-}}
-
-
-_tmk_capture_output() {{
-
-    local current_command
-
-    current_command="$(fc -ln -1 2>/dev/null)"
-
-    if _tmk_is_helper "$current_command"; then
-        return
-    fi
-
-    TMK_LAST_OUTPUT="$(tmux capture-pane -p 2>/dev/null)"
-    export TMK_LAST_OUTPUT
-}}
-
-
-_tmk_install_prompt_hook() {{
-
-    case ";${{PROMPT_COMMAND:-}};" in
-
-        *";_tmk_capture_output;"*)
-            ;;
-
-        *)
-            if [ -n "${{PROMPT_COMMAND:-}}" ]; then
-                PROMPT_COMMAND="_tmk_capture_output;$PROMPT_COMMAND"
-            else
-                PROMPT_COMMAND="_tmk_capture_output"
-            fi
-            ;;
-
-    esac
-}}
-
-
 refresh() {{
 
     if python "$HOME/projects/termux-key-manager/update.py"; then
@@ -417,9 +370,6 @@ clr() {{
 
     TMK_HELPER_ACTIVE=0
 }}
-
-
-_tmk_install_prompt_hook
 
 
 '''
