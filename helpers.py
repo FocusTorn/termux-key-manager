@@ -122,6 +122,112 @@ def generate_helpers():
 
 export HISTIGNORE='{histignore}'
 
+TMK_SESSION_DIR="$HOME/.termux/tmk-session"
+TMK_SESSION_RECORDS="$TMK_SESSION_DIR/records"
+
+mkdir -p "$TMK_SESSION_RECORDS"
+
+
+_tmk_recorder_debug()
+{{
+    [[ "$TMK_SESSION_INITIALIZING" == 1 ]] && return
+    [[ "$TMK_HELPER_ACTIVE" == 1 ]] && return
+
+    case "$BASH_COMMAND" in
+        _tmk_*|TMK_HELPER_ACTIVE=*|cpy_new*|refresh|clr|exit)
+            return
+            ;;
+    esac
+
+    if [[ "$TMK_SESSION_ACTIVE" != 1 ]]; then
+        TMK_SESSION_ACTIVE=1
+        TMK_SESSION_COMMANDS=
+        TMK_SESSION_OUT="$TMK_SESSION_DIR/current.$$"
+
+        : > "$TMK_SESSION_OUT"
+
+        exec 9>&1
+        exec 8>&2
+
+        exec > >(tee -a "$TMK_SESSION_OUT" >&9) 2>&1
+    fi
+
+    if [[ -n "$TMK_SESSION_COMMANDS" ]]; then
+        TMK_SESSION_COMMANDS+=$'\\n'
+    fi
+
+    TMK_SESSION_COMMANDS+="$BASH_COMMAND"
+}}
+
+
+_tmk_recorder_prompt()
+{{
+    local status=$?
+    local hist_line hist_id
+
+    if [[ "$TMK_SESSION_ACTIVE" == 1 ]]; then
+
+        exec 1>&9
+        exec 2>&8
+
+        exec 9>&-
+        exec 8>&-
+
+        hist_line="$(history 1)"
+        hist_line="${{hist_line#"${{hist_line%%[![:space:]]*}}"}}"
+        read -r hist_id _ <<< "$hist_line"
+
+        if [[ -z "$hist_id" ]]; then
+            hist_id="$$"
+        fi
+
+        mv "$TMK_SESSION_OUT"            "$TMK_SESSION_RECORDS/$hist_id"
+
+        printf '%s
+' "$TMK_SESSION_COMMANDS"             > "$TMK_SESSION_RECORDS/$hist_id.cmd"
+
+        TMK_SESSION_ACTIVE=0
+        TMK_SESSION_COMMANDS=
+        TMK_SESSION_OUT=
+    fi
+
+    return "$status"
+}}
+
+
+_tmk_recorder_install()
+{{
+    TMK_HELPER_ACTIVE=1
+
+    trap '_tmk_recorder_debug' DEBUG
+
+    # Remove any previous recorder hook before installing exactly one.
+    while [[ "$PROMPT_COMMAND" == *"_tmk_recorder_prompt"* ]]; do
+        PROMPT_COMMAND="${{PROMPT_COMMAND//_tmk_recorder_prompt;/}}"
+        PROMPT_COMMAND="${{PROMPT_COMMAND//;_tmk_recorder_prompt/}}"
+        PROMPT_COMMAND="${{PROMPT_COMMAND//_tmk_recorder_prompt/}}"
+    done
+
+    if [[ -n "$PROMPT_COMMAND" ]]; then
+        PROMPT_COMMAND="_tmk_recorder_prompt;$PROMPT_COMMAND"
+    else
+        PROMPT_COMMAND="_tmk_recorder_prompt"
+    fi
+
+    TMK_HELPER_ACTIVE=0
+}}
+
+
+TMK_SESSION_ACTIVE=0
+TMK_SESSION_COMMANDS=
+TMK_SESSION_OUT=
+TMK_SESSION_INITIALIZING=1
+TMK_HELPER_ACTIVE=0
+
+_tmk_recorder_install
+
+TMK_SESSION_INITIALIZING=0
+
 
 _tmk_is_helper() {{
 
@@ -186,11 +292,27 @@ refresh() {{
 
 
 cpy() {{
+    TMK_HELPER_ACTIVE=1
 
-    tmux capture-pane -p |
-        sed 's/cpy$//' |
-        sed ':a;/^[[:space:]]*$/{{$d;N;ba;}}' |
-        termux-clipboard-set
+    case "$1" in
+        all)
+            cpy_new all
+            ;;
+        out)
+            cpy_new out
+            ;;
+        rec)
+            cpy_new rec
+            ;;
+        *)
+            printf '%s\\n' \
+                'Usage: cpy {{all|out|rec}}' >&2
+            TMK_HELPER_ACTIVE=0
+            return 2
+            ;;
+    esac
+
+    TMK_HELPER_ACTIVE=0
 }}
 
 
@@ -203,15 +325,85 @@ cpy_all() {{
 }}
 
 
-cpy_out() {{
+_tmk_session_latest()
+{{
+    local latest
 
-    printf '%s' "$TMK_LAST_OUTPUT" |
-        sed ':a;/^[[:space:]]*$/{{$d;N;ba;}}' |
-        termux-clipboard-set
+    latest="$(
+        find "$TMK_SESSION_RECORDS"             -maxdepth 1             -type f             ! -name '*.cmd'             -printf '%f\\n' |
+            sort -n |
+            tail -n 1
+    )"
+
+    [[ -n "$latest" ]] || return 1
+
+    printf '%s\\n' "$latest"
+}}
+
+
+cpy_new()
+{{
+    local mode="$1"
+    local latest id
+    local cmd_file out_file
+
+    case "$mode" in
+
+        all)
+            for out_file in "$TMK_SESSION_RECORDS"/*; do
+
+                [[ -f "$out_file" ]] || continue
+                [[ "$out_file" == *.cmd ]] && continue
+
+                id="${{out_file##*/}}"
+                cmd_file="$TMK_SESSION_RECORDS/$id.cmd"
+
+                [[ -f "$cmd_file" ]] || continue
+
+                cat "$cmd_file"
+                printf '\\n'
+
+                cat "$out_file"
+                printf '\\n'
+            done |
+            termux-clipboard-set
+            ;;
+
+        out)
+            latest="$(_tmk_session_latest)" || return 1
+            cat "$TMK_SESSION_RECORDS/$latest" |
+                termux-clipboard-set
+            ;;
+
+        rec)
+            latest="$(_tmk_session_latest)" || return 1
+            cmd_file="$TMK_SESSION_RECORDS/$latest.cmd"
+            out_file="$TMK_SESSION_RECORDS/$latest"
+
+            {{
+                cat "$cmd_file"
+                printf '\\n'
+                cat "$out_file"
+            }} |
+            termux-clipboard-set
+            ;;
+
+        *)
+            printf '%s\\n'                 'Usage: cpy_new {{all|out|rec}}' >&2
+            return 2
+            ;;
+    esac
 }}
 
 
 clr() {{
+    TMK_HELPER_ACTIVE=1
+
+    # Clear authoritative structured session data.
+    find "$TMK_SESSION_RECORDS"         -maxdepth 1         -type f         -delete
+
+    # Remove any abandoned in-progress capture.
+    find "$TMK_SESSION_DIR"         -maxdepth 1         -type f         -name 'current.*'         -delete
 
     if [ -n "$TMUX" ]; then
         tmux send-keys -t "$TMUX_PANE" C-c
@@ -222,6 +414,8 @@ clr() {{
         printf '\\033c'
         clear
     fi
+
+    TMK_HELPER_ACTIVE=0
 }}
 
 
