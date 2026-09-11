@@ -122,128 +122,110 @@ def generate_helpers():
 
 export HISTIGNORE='{histignore}'
 
-if [[ "$TMK_PTY_RECORDER" == 1 ]]; then
-    PS1='\\w [TMK] \\$ '
-fi
-
 TMK_SESSION_DIR="$HOME/.termux/tmk-session"
 TMK_SESSION_RECORDS="$TMK_SESSION_DIR/records"
 
 mkdir -p "$TMK_SESSION_RECORDS"
 
-TMK_RECORD_ACTIVE=0
-TMK_RECORD_ID=0
-TMK_COMMANDS=
 
-_tmk_emit()
+_tmk_recorder_debug()
 {{
-    local payload="$1"
-
-    trap - DEBUG
-    builtin printf '\\033P%s\\033\\\\' "$payload"
-    trap '_tmk_debug' DEBUG
-}}
-
-_tmk_debug()
-{{
-    local status=$?
-
-    [[ "$TMK_PTY_RECORDER" == 1 ]] || return
+    [[ "$TMK_SESSION_INITIALIZING" == 1 ]] && return
     [[ "$TMK_HELPER_ACTIVE" == 1 ]] && return
 
     case "$BASH_COMMAND" in
-        _tmk_*|TMK_*|PROMPT_COMMAND=*|PS1=*|return\\ *|trap\\ *)
-            return
-            ;;
-        cpy*|refresh|clr)
-            return
-            ;;
-        exit|exit\\ *)
-            if [[ "$TMK_RECORD_ACTIVE" == 1 ]]; then
-                local encoded_commands
-                encoded_commands="$(
-                    builtin printf '%s' "$TMK_COMMANDS" |
-                    base64 |
-                    tr -d '\\n'
-                )"
-
-                _tmk_emit "TMK_END:${{TMK_RECORD_ID}}:${{status}}:${{encoded_commands}}"
-
-                TMK_RECORD_ACTIVE=0
-                TMK_COMMANDS=
-            fi
+        _tmk_*|TMK_HELPER_ACTIVE=*|cpy_new*|refresh|clr|exit)
             return
             ;;
     esac
 
-    [[ "$BASH_SUBSHELL" -gt 0 ]] && return
+    if [[ "$TMK_SESSION_ACTIVE" != 1 ]]; then
+        TMK_SESSION_ACTIVE=1
+        TMK_SESSION_COMMANDS=
+        TMK_SESSION_OUT="$TMK_SESSION_DIR/current.$$"
 
-    if [[ "$TMK_RECORD_ACTIVE" == 1 ]]; then
-        local encoded_commands
-        encoded_commands="$(
-            builtin printf '%s' "$TMK_COMMANDS" |
-            base64 |
-            tr -d '\\n'
-        )"
+        : > "$TMK_SESSION_OUT"
 
-        _tmk_emit "TMK_END:${{TMK_RECORD_ID}}:${{status}}:${{encoded_commands}}"
-
-        TMK_RECORD_ACTIVE=0
-        TMK_COMMANDS=
+        exec > >(tee -a "$TMK_SESSION_OUT" >&9) 2>&1
     fi
 
-    TMK_RECORD_ACTIVE=1
-    TMK_RECORD_ID=$((TMK_RECORD_ID + 1))
-    TMK_COMMANDS="$BASH_COMMAND"
+    if [[ -n "$TMK_SESSION_COMMANDS" ]]; then
+        TMK_SESSION_COMMANDS+=$'\\n'
+    fi
 
-    local encoded
-    encoded="$(
-        builtin printf '%s' "$BASH_COMMAND" |
-        base64 |
-        tr -d '\n'
-    )"
-
-    _tmk_emit "TMK_START:${{TMK_RECORD_ID}}:${{encoded}}"
+    TMK_SESSION_COMMANDS+="$BASH_COMMAND"
 }}
 
-_tmk_prompt()
+
+_tmk_recorder_prompt()
 {{
     local status=$?
+    local hist_line hist_id
 
-    if [[ "$TMK_PTY_RECORDER" == 1 && "$TMK_RECORD_ACTIVE" == 1 ]]; then
-        local encoded_commands
-        encoded_commands="$(
-            builtin printf '%s' "$TMK_COMMANDS" |
-            base64 |
-            tr -d '\\n'
-        )"
+    if [[ "$TMK_SESSION_ACTIVE" == 1 ]]; then
 
-        _tmk_emit "TMK_END:${{TMK_RECORD_ID}}:${{status}}:${{encoded_commands}}"
+        exec 1>&9
+        exec 2>&8
 
-        TMK_RECORD_ACTIVE=0
-        TMK_COMMANDS=
+        hist_line="$(history 1)"
+        hist_line="${{hist_line#"${{hist_line%%[![:space:]]*}}"}}"
+        read -r hist_id _ <<< "$hist_line"
+
+        if [[ -z "$hist_id" ]]; then
+            hist_id="$$"
+        fi
+
+        mv "$TMK_SESSION_OUT"            "$TMK_SESSION_RECORDS/$hist_id"
+
+        printf '%s
+' "$TMK_SESSION_COMMANDS"             > "$TMK_SESSION_RECORDS/$hist_id.cmd"
+
+        TMK_SESSION_ACTIVE=0
+        TMK_SESSION_COMMANDS=
+        TMK_SESSION_OUT=
     fi
 
     return "$status"
 }}
 
-_tmk_install()
+
+_tmk_recorder_install()
 {{
-    while [[ "$PROMPT_COMMAND" == *"_tmk_prompt"* ]]; do
-        PROMPT_COMMAND="${{PROMPT_COMMAND//_tmk_prompt;/}}"
-        PROMPT_COMMAND="${{PROMPT_COMMAND//;_tmk_prompt/}}"
-        PROMPT_COMMAND="${{PROMPT_COMMAND//_tmk_prompt/}}"
+    TMK_HELPER_ACTIVE=1
+
+    trap '_tmk_recorder_debug' DEBUG
+
+    # Remove any previous recorder hook before installing exactly one.
+    while [[ "$PROMPT_COMMAND" == *"_tmk_recorder_prompt"* ]]; do
+        PROMPT_COMMAND="${{PROMPT_COMMAND//_tmk_recorder_prompt;/}}"
+        PROMPT_COMMAND="${{PROMPT_COMMAND//;_tmk_recorder_prompt/}}"
+        PROMPT_COMMAND="${{PROMPT_COMMAND//_tmk_recorder_prompt/}}"
     done
 
     if [[ -n "$PROMPT_COMMAND" ]]; then
-        PROMPT_COMMAND="_tmk_prompt;$PROMPT_COMMAND"
+        PROMPT_COMMAND="_tmk_recorder_prompt;$PROMPT_COMMAND"
     else
-        PROMPT_COMMAND="_tmk_prompt"
+        PROMPT_COMMAND="_tmk_recorder_prompt"
     fi
+
+    TMK_HELPER_ACTIVE=0
 }}
 
-trap '_tmk_debug' DEBUG
-_tmk_install
+
+TMK_SESSION_ACTIVE=0
+TMK_SESSION_COMMANDS=
+TMK_SESSION_OUT=
+TMK_SESSION_INITIALIZING=1
+TMK_HELPER_ACTIVE=1
+
+# Preserve the real interactive stdout/stderr before DEBUG can run.
+exec 9>&1
+exec 8>&2
+
+_tmk_recorder_install
+
+TMK_SESSION_INITIALIZING=0
+
 
 refresh() {{
 

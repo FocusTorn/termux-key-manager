@@ -74,12 +74,8 @@
             }
         },
 
-        "CPY_OUT": {
-            "display": "💬",
-            "shell": "cpy out"
-        },
-
         "PST": {
+            "display": "⧉➠",
             "macro": "PASTE ENTER",
 
             "popup": {
@@ -98,7 +94,7 @@
     },
 
     "layout": [
-        [ "SHFT", "UDO", "CPY_ALL" , "CLR", "CPY_OUT", " "  , "UP", " "  ],
+        [ "SHFT", "UDO", "CPY_ALL" , "CLR", " ", " "  , "UP", " "  ],
         [ "CTRL", "ALT", "TAB"     , "PST", " ", "LT" , "DN", "RT" ]
     ]
 }
