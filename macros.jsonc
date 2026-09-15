@@ -55,7 +55,10 @@
         },
 
         "CLR": {
-            "shell": "clr",
+            "actions": [
+                { "tmux": "cancel-copy-mode" },
+                { "shell": "clr" }
+            ],
             "display": "⌫",
 
             "popup": {

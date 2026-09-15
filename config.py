@@ -46,6 +46,11 @@ HELPERS_PATH = os.path.join(
     "helpers.sh"
 )
 
+TMUX_CONF_PATH = os.path.join(
+    TERMUX_HOME,
+    ".tmux.conf"
+)
+
 BASHRC_PATH = os.path.join(
     TERMUX_HOME,
     ".bashrc"

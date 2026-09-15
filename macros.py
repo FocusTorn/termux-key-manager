@@ -40,11 +40,33 @@ def shell_to_macro(command):
     return " ".join(result)
 
 
+TMUX_ACTION_SEQUENCES = {
+    "cancel-copy-mode": "\x1b[5;30012~",
+}
+
+
+def tmux_action_to_macro(action):
+    """
+    Convert a TKM tmux action into a private terminal sequence.
+
+    The sequence is registered as a tmux user key and therefore
+    remains distinct from following Termux macro actions.
+    """
+
+    try:
+        return TMUX_ACTION_SEQUENCES[action]
+    except KeyError:
+        raise ValueError(
+            f"unknown tmux action: {action}"
+        )
+
+
 def convert_definition(definition):
     """
     Convert a source definition into native Termux syntax.
 
-    shell → macro
+    shell   → macro
+    actions → ordered native macro sequence
 
     Conversion is recursive so popup definitions work too.
     """
@@ -53,6 +75,39 @@ def convert_definition(definition):
         return definition
 
     result = definition.copy()
+
+    if "actions" in result:
+        actions = result.pop("actions")
+
+        if not isinstance(actions, list):
+            raise ValueError("actions must be a list")
+
+        compiled = []
+
+        for action in actions:
+            if not isinstance(action, dict):
+                raise ValueError("each action must be an object")
+
+            if set(action) == {"macro"}:
+                compiled.append(action["macro"])
+
+            elif set(action) == {"shell"}:
+                compiled.append(
+                    shell_to_macro(action["shell"])
+                )
+
+            elif set(action) == {"tmux"}:
+                compiled.append(
+                    tmux_action_to_macro(action["tmux"])
+                )
+
+            else:
+                raise ValueError(
+                    "each action must contain exactly one of: "
+                    "macro, shell, tmux"
+                )
+
+        result["macro"] = " ".join(compiled)
 
     if "shell" in result:
 

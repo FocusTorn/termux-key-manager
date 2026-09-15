@@ -3,6 +3,7 @@ import subprocess
 from config import JSON_PATH
 from helpers import generate_helpers
 from properties import build_termux_layout
+from tmux import generate_tmux_config
 
 
 def main():
@@ -10,6 +11,7 @@ def main():
     try:
         generate_helpers()
         build_termux_layout()
+        generate_tmux_config()
 
         subprocess.run(
             ["termux-reload-settings"],

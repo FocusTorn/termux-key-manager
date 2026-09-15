@@ -14,6 +14,7 @@ import helpers
 import properties
 import config
 import update
+import tmux
 
 class TestTermuxKeyManager(unittest.TestCase):
 
@@ -23,6 +24,73 @@ class TestTermuxKeyManager(unittest.TestCase):
         self.assertEqual(shell_to_macro("a\tb"), "a TAB b ENTER")
         self.assertEqual(shell_to_macro("line1\nline2"), "line1 ENTER line2 ENTER")
         self.assertEqual(shell_to_macro(""), "ENTER")
+
+    def test_convert_definition_actions(self):
+        definition = {
+            "display": "Test",
+            "actions": [
+                {"tmux": "cancel-copy-mode"},
+                {"shell": "clr"},
+            ],
+        }
+
+        converted = convert_definition(definition)
+
+        self.assertEqual(
+            converted["macro"],
+            "\x1b[5;30012~ clr ENTER",
+        )
+        self.assertNotIn("actions", converted)
+
+    def test_convert_definition_tmux_action(self):
+        definition = {
+            "actions": [
+                {"tmux": "cancel-copy-mode"},
+            ],
+        }
+
+        converted = convert_definition(definition)
+
+        self.assertEqual(
+            converted["macro"],
+            "\x1b[5;30012~",
+        )
+
+    def test_convert_definition_rejects_unknown_tmux_action(self):
+        definition = {
+            "actions": [
+                {"tmux": "does-not-exist"},
+            ],
+        }
+
+        with self.assertRaises(ValueError):
+            convert_definition(definition)
+
+    def test_convert_definition_actions_preserve_order(self):
+        definition = {
+            "actions": [
+                {"shell": "first"},
+                {"macro": "TAB"},
+                {"shell": "second"},
+            ],
+        }
+
+        converted = convert_definition(definition)
+
+        self.assertEqual(
+            converted["macro"],
+            "first ENTER TAB second ENTER",
+        )
+
+    def test_convert_definition_rejects_invalid_action(self):
+        definition = {
+            "actions": [
+                {"unknown": "value"},
+            ],
+        }
+
+        with self.assertRaises(ValueError):
+            convert_definition(definition)
 
     def test_convert_definition(self):
         self.assertEqual(convert_definition("string"), "string")
@@ -192,14 +260,20 @@ class TestTermuxKeyManager(unittest.TestCase):
             orig_helpers = helpers.HELPERS_PATH
             orig_bashrc = helpers.BASHRC_PATH
             orig_props = config.PROPS_PATH
+            orig_tmux = config.TMUX_CONF_PATH
+            orig_tmux_json = tmux.JSON_PATH
             orig_prop_json = properties.JSON_PATH
             orig_prop_props = properties.PROPS_PATH
+
+            tmux_path = os.path.join(tmpdir, ".tmux.conf")
 
             config.JSON_PATH = json_path
             helpers.JSON_PATH = json_path
             helpers.HELPERS_PATH = helpers_path
             helpers.BASHRC_PATH = bashrc_path
             config.PROPS_PATH = props_path
+            config.TMUX_CONF_PATH = tmux_path
+            tmux.JSON_PATH = json_path
             properties.JSON_PATH = json_path
             properties.PROPS_PATH = props_path
 
@@ -217,9 +291,42 @@ class TestTermuxKeyManager(unittest.TestCase):
                 helpers.HELPERS_PATH = orig_helpers
                 helpers.BASHRC_PATH = orig_bashrc
                 config.PROPS_PATH = orig_props
+                config.TMUX_CONF_PATH = orig_tmux
+                tmux.JSON_PATH = orig_tmux_json
                 properties.JSON_PATH = orig_prop_json
                 properties.PROPS_PATH = orig_prop_props
                 update.subprocess.run = orig_run
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestTmuxConfig(unittest.TestCase):
+
+    def test_tmux_config_for_cancel_copy_mode(self):
+        from tmux import build_tmux_config
+
+        config = build_tmux_config({
+            "cancel-copy-mode"
+        })
+
+        self.assertIn(
+            'set -g assume-paste-time 0',
+            config
+        )
+        self.assertIn(
+            'set -s user-keys[0] "\\e[5;30012~"',
+            config
+        )
+        self.assertIn(
+            'bind-key -T copy-mode User0 send-keys -X cancel',
+            config
+        )
+        self.assertIn(
+            'bind-key -T copy-mode-vi User0 send-keys -X cancel',
+            config
+        )
+        self.assertNotIn(
+            'bind-key -T root User0',
+            config
+        )
