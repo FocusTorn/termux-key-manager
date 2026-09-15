@@ -92,7 +92,7 @@ def update_tmux_conf(config):
 
     if config:
         if pattern.search(text):
-            text = pattern.sub(block, text, count=1)
+            text = pattern.sub(lambda _: block, text, count=1)
         else:
             if text and not text.endswith("\n"):
                 text += "\n"

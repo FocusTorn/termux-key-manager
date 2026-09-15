@@ -69,11 +69,17 @@
 
         "CPY_ALL": {
             "display": "📑",
-            "shell": "cpy_all",
+            "actions": [
+                { "tmux": "cancel-copy-mode" },
+                { "shell": "cpy_all" }
+            ],
 
             "popup": {
                 "display": "COPY",
-                "shell": "cpy"
+                "actions": [
+                    { "tmux": "cancel-copy-mode" },
+                    { "shell": "cpy" }
+                ]
             }
         },
 

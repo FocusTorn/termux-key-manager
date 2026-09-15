@@ -56,6 +56,31 @@ class TestTermuxKeyManager(unittest.TestCase):
             "\x1b[5;30012~",
         )
 
+    def test_convert_definition_cpy_actions_cancel_copy_mode_first(self):
+        definition = {
+            "actions": [
+                {"tmux": "cancel-copy-mode"},
+                {"shell": "cpy_all"},
+            ],
+            "popup": {
+                "actions": [
+                    {"tmux": "cancel-copy-mode"},
+                    {"shell": "cpy"},
+                ],
+            },
+        }
+
+        converted = convert_definition(definition)
+
+        self.assertEqual(
+            converted["macro"],
+            "\x1b[5;30012~ cpy_all ENTER",
+        )
+        self.assertEqual(
+            converted["popup"]["macro"],
+            "\x1b[5;30012~ cpy ENTER",
+        )
+
     def test_convert_definition_rejects_unknown_tmux_action(self):
         definition = {
             "actions": [
