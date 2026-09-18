@@ -1,39 +1,51 @@
 # Termux Integration
 
-TKM integrates with Termux through generated configuration and shell helpers.
+TKM integrates with normal Termux configuration through generated files.
 
-## Keyboard configuration
+## Keyboard
 
-properties.py reads macros.jsonc, converts each layout definition, and writes the extra-keys setting to:
+`properties.py` reads `macros.jsonc`, converts the layout, serializes it as JSON, and writes:
 
     ~/.termux/termux.properties
 
-Existing properties outside extra-keys are preserved.
+Only the `extra-keys` setting is replaced. Other properties are preserved.
 
-## Shell helpers
+## Helpers
 
-helpers.py generates:
+`helpers.py` generates:
 
     ~/.termux/helpers.sh
 
-It also updates a marked TKM block in:
+The generated file contains the TKM shell functions and the generated `HISTIGNORE` value.
+
+## Bash
+
+The same module maintains a marked section in:
 
     ~/.bashrc
 
-The Bash block supplies generated HISTIGNORE settings and sources the helper file.
+The generated section exports `HISTIGNORE` and sources `~/.termux/helpers.sh`.
+
+On subsequent updates the existing TKM block is replaced rather than appended indefinitely.
 
 ## tmux
 
-tmux.py generates a marked section in:
+`tmux.py` maintains a marked section in:
 
     ~/.tmux.conf
 
+The section is derived from tmux actions present in the source definitions.
+
 ## Reload
 
-After generation succeeds, update.py invokes:
+`update.py` performs generation and then invokes:
 
     termux-reload-settings
 
-A failed generation or reload causes the update operation to report failure.
+If generation fails, the reload is not reached and the update reports failure.
 
-TKM configures Termux. It does not replace the normal Termux shell or terminal execution path.
+## Execution boundary
+
+The normal Termux Bash remains the shell.
+
+TKM supplies keyboard macros and shell helpers around that environment. It does not replace or wrap the shell, take over the PTY, or provide a terminal-output capture service.
