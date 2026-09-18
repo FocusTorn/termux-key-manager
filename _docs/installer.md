@@ -1,22 +1,44 @@
 # Installer and Update Model
 
-TKM's current runtime update path is centered on update.py.
+The repository currently has an update generator, not a separate installer implementation.
 
-Run from the repository:
+## Current update entry point
+
+From the project directory:
 
     python update.py
 
-The operation:
+`update.py` calls the generators in this order:
 
-1. generates ~/.termux/helpers.sh and the TKM block in .bashrc
-2. generates extra-keys in ~/.termux/termux.properties
-3. generates the TKM block in .tmux.conf
-4. runs termux-reload-settings
+1. `generate_helpers()`
+2. `build_termux_layout()`
+3. `generate_tmux_config()`
+4. `termux-reload-settings`
 
-If any stage raises an exception, the update reports failure rather than printing the success message.
+If any step raises an exception, the update reports failure and returns a non-zero status.
 
-## Safe-update principles
+## Files that may change
 
-The update path should remain deterministic from repository source, limited to TKM-owned generated content, safe to repeat, and non-destructive to unrelated user configuration.
+The update path can change:
 
-Do not describe historical installer, PTY, terminal-sidecar, or unrelated-project experiments as TKM architecture.
+    ~/.termux/helpers.sh
+    ~/.termux/termux.properties
+    ~/.bashrc
+    ~/.tmux.conf
+
+Ownership rules are documented in `generated-files.md`.
+
+## Repeatability
+
+The generators are designed to replace TKM-owned state rather than accumulate it:
+
+- the TKM `.bashrc` block is replaced
+- the TKM `.tmux.conf` block is replaced
+- `extra-keys` is replaced structurally
+- `helpers.sh` is regenerated
+
+## Current boundary
+
+There is no separate installer implementation in the current repository.
+
+Do not document PTY setup, terminal plugins, package installation, or other historical experiments as part of the current TKM installer architecture.
