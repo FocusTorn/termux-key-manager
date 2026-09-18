@@ -6,9 +6,11 @@ Start with:
 
     _docs/primer.md
 
-Then read the detailed document covering the behavior being changed.
+Then read the detailed document for the behavior being changed.
 
-## Change flow
+## Source-first workflow
+
+For declarative keyboard behavior:
 
     macros.jsonc
         |
@@ -24,22 +26,37 @@ Then read the detailed document covering the behavior being changed.
         v
     broader regression checkpoint
 
-## Source-first rule
+Keep source intent in `macros.jsonc`.
 
-When behavior is declarative, change macros.jsonc rather than patching generated output.
+## Module boundaries
 
-Keep transformation logic in the appropriate module:
+Use the module responsible for the behavior:
 
-- macros.py for definition and action conversion
-- properties.py for Termux keyboard configuration
-- helpers.py for shell and Bash helpers
-- tmux.py for tmux configuration
-- update.py for orchestration
+- `macros.py` — definition and action conversion
+- `properties.py` — Termux keyboard layout generation
+- `helpers.py` — shell helpers and Bash integration
+- `tmux.py` — tmux configuration
+- `jsonc.py` — JSONC comment handling
+- `update.py` — generation orchestration
 
-## Documentation rule
+## Change discipline
 
-Document current TKM behavior and boundaries.
+Keep changes narrow and preserve unrelated behavior.
 
-Do not carry obsolete PTY, terminal-sidecar, receiver, plugin, TAP, or experiment architecture into active TKM documentation. Historical material that belongs to another project remains outside TKM.
+Do not patch generated files as a permanent solution.
 
-Treat command output, test results, and inspected generated files as evidence. Do not claim verification unless it actually occurred.
+When a change affects generated configuration, verify the generated result in addition to focused tests.
+
+## Documentation discipline
+
+Documentation describes the current repository.
+
+Do not carry removed PTY, terminal-sidecar, receiver, plugin, or experiment architecture into active TKM docs.
+
+TKM and TAP are separate projects. TKM documentation should describe TKM, not establish a live dependency on TAP.
+
+## Evidence
+
+Treat inspected files, command output, and test results as evidence.
+
+Do not claim verification that was not actually performed.
