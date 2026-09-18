@@ -142,9 +142,8 @@ class TestTermuxKeyManager(unittest.TestCase):
             json_path = os.path.join(tmpdir, "macros.jsonc")
             data = {
                 "definitions": {
-                    "CMD1": {"shell": "echo one"},
-                    "CMD2": {"popup": {"shell": "echo two"}},
-                    "NOCMD": {"key": "ENTER"}
+                    "A": {"shell": "echo one"},
+                    "B": {"shell": "echo two"},
                 }
             }
             with open(json_path, "w", encoding="utf-8") as f:
@@ -157,6 +156,37 @@ class TestTermuxKeyManager(unittest.TestCase):
                 self.assertIn("echo one", cmds)
                 self.assertIn("echo two", cmds)
                 self.assertEqual(len(cmds), 2)
+            finally:
+                helpers.JSON_PATH = original_json_path
+
+    def test_get_shell_commands_includes_action_shells(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            json_path = os.path.join(tmpdir, "macros.jsonc")
+            data = {
+                "definitions": {
+                    "ACTIONS": {
+                        "actions": [
+                            {"shell": "cpy_all"},
+                            {"tmux": "cancel-copy-mode"},
+                        ],
+                        "popup": {
+                            "actions": [
+                                {"shell": "cpy"},
+                            ]
+                        },
+                    }
+                }
+            }
+            with open(json_path, "w", encoding="utf-8") as f:
+                json.dump(data, f)
+
+            original_json_path = helpers.JSON_PATH
+            helpers.JSON_PATH = json_path
+            try:
+                cmds = get_shell_commands()
+                self.assertIn("cpy_all", cmds)
+                self.assertIn("cpy", cmds)
+                self.assertNotIn("cancel-copy-mode", cmds)
             finally:
                 helpers.JSON_PATH = original_json_path
 
@@ -210,6 +240,10 @@ class TestTermuxKeyManager(unittest.TestCase):
                     content = f.read()
                 self.assertIn("echo hello", content)
                 self.assertIn("refresh()", content)
+                self.assertIn('_tkm_filter_copy_scaffold() {', content)
+                self.assertIn('awk -v prompt="$prompt" -v command="$command"', content)
+                self.assertIn('_tkm_filter_copy_scaffold cpy', content)
+                self.assertIn('_tkm_filter_copy_scaffold cpy_all', content)
                 mode = os.stat(helpers_path).st_mode & 0o777
                 self.assertEqual(mode, 0o700)
             finally:

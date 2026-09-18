@@ -167,10 +167,25 @@ refresh() {{
 }}
 
 
+_tkm_filter_copy_scaffold() {{
+    local command="$1"
+    local prompt="${{PWD/#$HOME/~}} $"
+
+    awk -v prompt="$prompt" -v command="$command" '
+        {{
+            line = $0
+            sub(/[[:space:]]+$/, "", line)
+            if (line == prompt || line == prompt " " command) next
+            print
+        }}
+    '
+}}
+
+
 cpy() {{
 
     tmux capture-pane -p |
-        sed 's/cpy$//' |
+        _tkm_filter_copy_scaffold cpy |
         sed ':a;/^[[:space:]]*$/{{$d;N;ba;}}' |
         termux-clipboard-set
 }}
@@ -190,7 +205,7 @@ cpy_pytest() {{
 cpy_all() {{
 
     tmux capture-pane -pS - |
-        sed 's/cpy_all$//' |
+        _tkm_filter_copy_scaffold cpy_all |
         sed ':a;/^[[:space:]]*$/{{$d;N;ba;}}' |
         termux-clipboard-set
 }}
