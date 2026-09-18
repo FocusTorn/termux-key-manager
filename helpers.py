@@ -35,21 +35,35 @@ def get_shell_commands():
 
     commands = []
 
-    for definition in data.get("definitions", {}).values():
+    def collect(definition):
+
+        if not isinstance(definition, dict):
+            return
 
         shell = definition.get("shell")
 
         if shell:
             commands.append(shell)
 
+        actions = definition.get("actions")
+
+        if isinstance(actions, list):
+
+            for action in actions:
+
+                if isinstance(action, dict):
+                    shell = action.get("shell")
+
+                    if shell:
+                        commands.append(shell)
+
         popup = definition.get("popup")
 
         if isinstance(popup, dict):
+            collect(popup)
 
-            shell = popup.get("shell")
-
-            if shell:
-                commands.append(shell)
+    for definition in data.get("definitions", {}).values():
+        collect(definition)
 
     return list(dict.fromkeys(commands))
 
