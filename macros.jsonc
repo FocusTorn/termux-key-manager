@@ -6,18 +6,17 @@
             "macro": "CTRL b n"
         },
 
-
-
-
-
-
         "CTRL": {
             "key": "CTRL"
         },
 
         "TAB": {
             "display": "⮕Ⅰ",
-            "key": "TAB"
+            "key": "TAB",
+            "popup": {
+                "display": "⤺",
+                "macro": "\u001F"
+            }
         },
 
         "SHFT": {
@@ -59,21 +58,35 @@
                 { "tmux": "cancel-copy-mode" },
                 { "shell": "clr" }
             ],
-            "display": "⌫",
-
+            "display": "❌",
             "popup": {
                 "display": "♻ ↺",
                 "shell": "refresh"
             }
         },
 
+        "CPY_TEST": {
+            "display": "🧪",
+            "actions": [
+                { "shell": "cpy_all" },
+                { "shell": "cpy_pytest" }
+            ]
+        },
+
+        "CPY_PASTE": {
+            "display": "🗨",
+            "actions": [
+                { "shell": "PASTE ENTER" },
+                { "shell": "cpy_all" }
+            ]
+        },
+
         "CPY_ALL": {
-            "display": "📑",
+            "display": "📄",
             "actions": [
                 { "tmux": "cancel-copy-mode" },
                 { "shell": "cpy_all" }
             ],
-
             "popup": {
                 "display": "COPY",
                 "actions": [
@@ -82,27 +95,24 @@
                 ]
             }
         },
-
         "PST": {
+            "display": "⧉",
             "macro": "PASTE ENTER",
-
             "popup": {
                 "key": "PASTE"
-            },
-
-
-            "holder": "⎌ ⎋  🛑 ⧠ ⧉ 📋 ⚼ ❐ 🗃 📋 ⟏ ⍉ 🔳  ⍉ 📝  🚫 💥 🧾 ❌ 🛇 💢"
+            }
         },
 
         " ": {
             "display": " ",
-            "macro": ""
+            "macro": "",
+
+            "holder": "⌫ ⧉ ⎌ ⎋ 📤  📥 📲 🗨 🛑 ⧠ ⧉ 📄 📃 📑 📷 📜 📋 ⚼ ❐ 🗃 📋 ⟏ ⍉ 🔳  ⍉ 📝  🚫 💥 🧾 ❌ 🛇 💢"
         }
 
     },
-
     "layout": [
-        [ "SHFT", "UDO", "CPY_ALL" , "CLR", " ", " "  , "UP", " "  ],
-        [ "CTRL", "ALT", "TAB"     , "PST", " ", "LT" , "DN", "RT" ]
+        [ "SHFT", "TAB", " ", " "      , "PST"     , "CLR"      , " ", " "  , "UP", " "  ],
+        [ "CTRL", "ALT", " ", "CPY_ALL", "CPY_TEST", "CPY_PASTE", " ", "LT" , "DN", "RT" ]
     ]
 }

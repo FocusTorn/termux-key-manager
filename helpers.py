@@ -8,6 +8,21 @@ BASHRC_START = "# >>> termux-key-manager history >>>"
 BASHRC_END = "# <<< termux-key-manager history <<<"
 
 
+def trim_pytest_output(text):
+    lines = text.splitlines(keepends=True)
+
+    for index in range(len(lines) - 1, -1, -1):
+        stripped = lines[index].strip()
+
+        if stripped.endswith("[100%]"):
+            progress = stripped[:-len("[100%]")].rstrip()
+
+            if progress and all(char in ".FEsxXfPp-" for char in progress):
+                return "".join(lines[index:])
+
+    return text
+
+
 def get_shell_commands():
 
     with open(
@@ -144,6 +159,17 @@ cpy() {{
         sed 's/cpy$//' |
         sed ':a;/^[[:space:]]*$/{{$d;N;ba;}}' |
         termux-clipboard-set
+}}
+
+
+
+
+cpy_pytest() {{
+
+    termux-clipboard-get |
+        python -c 'import sys; text=sys.stdin.read(); lines=text.splitlines(keepends=True); matches=[i for i,line in enumerate(lines) if line.strip().endswith("[100%]") and line.strip()[:-6].rstrip() and all(c in ".FEsxXfPp-" for c in line.strip()[:-6].rstrip())]; start=matches[-1] if matches else None; sys.stdout.write("".join(lines[start:]) if start is not None else text)' > "$PREFIX/tmp/cpy_pytest.out"
+    termux-clipboard-set < "$PREFIX/tmp/cpy_pytest.out"
+    rm -f "$PREFIX/tmp/cpy_pytest.out"
 }}
 
 
