@@ -2,24 +2,51 @@
 
 tmux is an integration dependency for TKM's current terminal and clipboard workflows.
 
-TKM discovers tmux actions from macros.jsonc.
+## Action discovery
 
-For each supported action, tmux.py assigns a private tmux user key to the corresponding terminal sequence and binds that user key in both copy-mode and copy-mode-vi.
+`tmux.py` scans source definitions and nested popup definitions for `tmux` actions.
+
+Duplicate action names are reduced to one generated binding.
+
+## Private user keys
+
+Each supported action receives a tmux user key.
+
+The corresponding terminal sequence is emitted by `macros.py` and registered by `tmux.py`.
+
+For each action, bindings are generated in both:
+
+    copy-mode
+    copy-mode-vi
 
 ## cancel-copy-mode
 
-The current supported tmux action is cancel-copy-mode.
+The current supported action is:
 
-It is represented by the private terminal sequence:
+    cancel-copy-mode
+
+Its private terminal sequence is:
 
     ESC [ 5 ; 3 0 0 1 2 ~
 
-The generated binding maps the sequence to tmux's copy-mode cancel action.
+The generated tmux binding maps that user key to:
 
-## Generated configuration
+    send-keys -X cancel
 
-TKM writes a marked block to ~/.tmux.conf.
+The generated configuration also sets:
 
-If the source definitions no longer require tmux actions, the generated TKM block is removed.
+    set -g assume-paste-time 0
 
-TKM generates the integration; tmux interprets the resulting configuration.
+## Replacement
+
+TKM maintains a marked block in:
+
+    ~/.tmux.conf
+
+When tmux actions are no longer required, the generated TKM block is removed.
+
+Existing configuration outside the TKM block is preserved.
+
+## Responsibility boundary
+
+TKM declares and generates the integration. tmux interprets the resulting configuration.
