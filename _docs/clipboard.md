@@ -1,25 +1,47 @@
 # Clipboard Workflows
 
-TKM provides clipboard helpers through the generated ~/.termux/helpers.sh.
+TKM's clipboard helpers use tmux capture and the Termux clipboard commands.
 
 ## cpy
 
-Captures the current tmux pane, removes the triggering cpy command, trims trailing blank lines, and sends the result to the Termux clipboard.
+Captures the current tmux pane.
+
+The generated pipeline:
+
+1. capture the pane
+2. remove the triggering `cpy` command
+3. remove trailing blank lines
+4. send the result to `termux-clipboard-set`
 
 ## cpy_all
 
-Captures the current tmux pane including scrollback, removes the triggering cpy_all command, trims trailing blank lines, and sends the result to the Termux clipboard.
+Captures the current tmux pane including scrollback.
+
+It applies the same trigger-command and trailing-blank cleanup before sending the result to the clipboard.
 
 ## cpy_pytest
 
-Reads current clipboard content and searches for the final recognized pytest progress line ending in [100%]. When found, it replaces the clipboard with the output beginning at that result section.
+Operates on existing clipboard content.
 
-This is a formatting helper for already captured test output. It does not obtain terminal output from Bash history.
+It:
 
-Bash history records commands, not terminal output.
+1. reads the clipboard with `termux-clipboard-get`
+2. searches for pytest progress lines ending in `[100%]`
+3. selects the latest matching run
+4. replaces the clipboard with that result section
+
+If no match is found, the original clipboard content is retained.
+
+## Important distinction
+
+Bash history contains commands. It does not contain terminal output.
+
+TKM obtains terminal content for copying through tmux capture, then optionally transforms that captured text.
 
 ## Related helpers
 
-clr clears the terminal state, using the active tmux path when running under tmux.
+`clr` clears terminal state.
 
-refresh reruns the TKM update path and reloads the generated helper environment.
+`refresh` regenerates TKM configuration and reloads the generated shell environment.
+
+See `_docs/commands.md` for the complete helper behavior.
