@@ -9,6 +9,7 @@ TKM is a configuration manager for Termux keyboard behavior and its supporting s
         +--> macros.py
         |       |
         |       +--> native macro definitions
+        |       +--> action sequences
         |
         +--> properties.py -> ~/.termux/termux.properties
         |
@@ -24,6 +25,29 @@ TKM is a configuration manager for Termux keyboard behavior and its supporting s
 `macros.jsonc` is the authoritative source for keyboard definitions and layout.
 
 The Python modules transform that source into runtime configuration. Generated files are outputs, not alternate sources of truth.
+
+## Action model
+
+Definitions may contain an ordered `actions` list. Each action has exactly one type:
+
+| Action | Transformation | Runtime role |
+|---|---|---|
+| `macro` | Native Termux macro sequence | Emits keyboard input directly |
+| `shell` | Shell command converted to a macro sequence | Executes through the normal Termux shell |
+| `tmux` | Private terminal sequence | Reaches the TKM-generated tmux binding |
+
+Actions are emitted in source order.
+
+For example:
+
+    "actions": [
+        { "tmux": "cancel-copy-mode" },
+        { "shell": "cpy_all" }
+    ]
+
+The first action is handled by the tmux integration. The second becomes a normal shell command. Because it is a shell command, it is also included in the dynamically generated Bash `HISTIGNORE`.
+
+Nested popup definitions use the same action conversion and discovery rules.
 
 ## Responsibilities
 
@@ -47,6 +71,8 @@ Builds the Termux `extra-keys` layout and replaces the existing `extra-keys` pro
 
 Generates the TKM shell helper file and updates the marked TKM section in `.bashrc`.
 
+It derives Bash `HISTIGNORE` from shell commands declared in source definitions, including `actions[].shell` entries and nested popup actions.
+
 ### tmux.py
 
 Discovers tmux actions declared by the source and generates the matching marked section in `.tmux.conf`.
@@ -64,6 +90,8 @@ Strips line and block comments while preserving comment-like text inside JSON st
 TKM configures the Termux environment. It does not replace Bash, own the PTY, capture terminal output as a service, or run a terminal-sidecar process.
 
 Termux remains responsible for terminal and shell execution. tmux remains responsible for tmux behavior.
+
+A `tmux` action is therefore not a Bash command. It uses a private terminal sequence to invoke behavior registered by the TKM-generated tmux configuration.
 
 ## Configuration ownership
 

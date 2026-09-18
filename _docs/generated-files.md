@@ -18,6 +18,16 @@ TKM uses these markers:
 
 The generated block contains the TKM `HISTIGNORE` export and helper import.
 
+The `HISTIGNORE` value is generated from every shell command declared in `macros.jsonc`, including:
+
+- top-level `shell` fields
+- `actions[].shell` entries
+- shell commands in nested popup definitions
+
+Actions of type `tmux` or `macro` are not included because they do not execute Bash commands.
+
+For the special helper `cpy`, TKM uses `cpy*` so invocations with arguments are also ignored.
+
 Content outside the block belongs to the user.
 
 ## .tmux.conf

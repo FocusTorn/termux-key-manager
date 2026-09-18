@@ -14,6 +14,26 @@ The current helper set is:
 | `clr` | Clear terminal state |
 | `refresh` | Regenerate TKM configuration and reload the helper environment |
 
+## History behavior
+
+TKM dynamically builds Bash `HISTIGNORE` from the shell commands declared in `macros.jsonc`.
+
+That includes shell commands in both:
+
+- top-level `shell` fields
+- `actions[].shell` entries, including nested popup actions
+
+For example:
+
+    "actions": [
+        { "tmux": "cancel-copy-mode" },
+        { "shell": "cpy_all" }
+    ]
+
+Only `cpy_all` is a Bash command and therefore contributes to `HISTIGNORE`. The `tmux` action is a private terminal sequence and does not appear in Bash history, so it does not belong in `HISTIGNORE`.
+
+The generated `HISTIGNORE` currently includes the shell helpers used by the macros. `cpy` is represented as `cpy*` so argument-bearing invocations are ignored too.
+
 ## cpy
 
 Captures the current tmux pane, removes the triggering `cpy` command, removes trailing blank lines, and sends the result to `termux-clipboard-set`.

@@ -20,6 +20,27 @@ It contains:
 
 A definition may contain fields together when the resulting Termux representation supports them.
 
+## Actions
+
+`actions` is an ordered list of action objects. Each action has exactly one action type:
+
+| Action | Meaning |
+|---|---|
+| `macro` | Emit a native Termux macro sequence |
+| `shell` | Convert a shell command to a macro sequence, including the terminating Enter |
+| `tmux` | Emit a private terminal sequence handled by the TKM/tmux integration |
+
+For example:
+
+    "actions": [
+        { "tmux": "cancel-copy-mode" },
+        { "shell": "cpy_all" }
+    ]
+
+The actions are emitted in order. The tmux action does not execute a Bash command; the shell action does.
+
+Shell actions are also included when TKM dynamically builds `HISTIGNORE`, so shell helpers invoked through a macro do not remain in Bash history. Tmux and native macro actions are not included because they are not Bash commands.
+
 ## Layout
 
 `layout` contains rows of definition IDs. Every referenced ID must exist in `definitions`.
@@ -47,7 +68,7 @@ The current source includes:
 
 Popups may be simple strings, such as `PGUP`, or nested definition objects.
 
-Nested popup definitions are passed through the same conversion logic as normal definitions.
+Nested popup definitions are passed through the same conversion logic as normal definitions. Their `actions` are therefore processed in the same order and their shell actions are also included in the generated `HISTIGNORE`.
 
 ## Editing rule
 
