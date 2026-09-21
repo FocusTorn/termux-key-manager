@@ -31,7 +31,7 @@ class TestTermuxKeyManager(unittest.TestCase):
         definition = {
             "display": "Test",
             "actions": [
-                {"tmux": "cancel-copy-mode"},
+                {"tmux": "copy_mode_exit"},
                 {"shell": "clr"},
             ],
         }
@@ -47,7 +47,7 @@ class TestTermuxKeyManager(unittest.TestCase):
     def test_convert_definition_tmux_action(self):
         definition = {
             "actions": [
-                {"tmux": "cancel-copy-mode"},
+                {"tmux": "copy_mode_exit"},
             ],
         }
 
@@ -58,15 +58,59 @@ class TestTermuxKeyManager(unittest.TestCase):
             "\x1b[5;30012~",
         )
 
+    def test_convert_definition_copy_actions_use_private_sequences(self):
+        self.assertEqual(
+            convert_definition(
+                {"actions": [{"tmux": "copy_entire_pane"}]}
+            )["macro"],
+            "\x1b[5;30013~",
+        )
+        self.assertEqual(
+            convert_definition(
+                {"actions": [{"tmux": "copy_test_result"}]}
+            )["macro"],
+            "\x1b[5;30014~",
+        )
+
+    def test_convert_definition_mixed_tmux_and_shell_actions_preserve_order(self):
+        from macros import convert_definition, shell_to_macro
+
+        definition = {
+            "actions": [
+                {"tmux": "copy_mode_exit"},
+                {"shell": "cpy"},
+            ]
+        }
+
+        self.assertEqual(
+            convert_definition(definition)["macro"],
+            "\x1b[5;30012~ " + shell_to_macro("cpy"),
+        )
+
+    def test_convert_definition_shell_then_tmux_actions_preserve_order(self):
+        from macros import convert_definition, shell_to_macro
+
+        definition = {
+            "actions": [
+                {"shell": "clr"},
+                {"tmux": "copy_mode_exit"},
+            ]
+        }
+
+        self.assertEqual(
+            convert_definition(definition)["macro"],
+            shell_to_macro("clr") + " " + "\x1b[5;30012~",
+        )
+
     def test_convert_definition_cpy_actions_cancel_copy_mode_first(self):
         definition = {
             "actions": [
-                {"tmux": "cancel-copy-mode"},
+                {"tmux": "copy_mode_exit"},
                 {"shell": "cpy_all"},
             ],
             "popup": {
                 "actions": [
-                    {"tmux": "cancel-copy-mode"},
+                    {"tmux": "copy_mode_exit"},
                     {"shell": "cpy"},
                 ],
             },
@@ -169,7 +213,7 @@ class TestTermuxKeyManager(unittest.TestCase):
                     "ACTIONS": {
                         "actions": [
                             {"shell": "cpy_all"},
-                            {"tmux": "cancel-copy-mode"},
+                            {"tmux": "copy_mode_exit"},
                         ],
                         "popup": {
                             "actions": [
@@ -188,7 +232,7 @@ class TestTermuxKeyManager(unittest.TestCase):
                 cmds = get_shell_commands()
                 self.assertIn("cpy_all", cmds)
                 self.assertIn("cpy", cmds)
-                self.assertNotIn("cancel-copy-mode", cmds)
+                self.assertNotIn("copy_mode_exit", cmds)
             finally:
                 helpers.JSON_PATH = original_json_path
 
@@ -527,7 +571,7 @@ if __name__ == "__main__":
 
 class TestTmuxConfig(unittest.TestCase):
 
-    def test_get_tmux_actions_preserves_mixed_action_sequence(self):
+    def test_get_tmux_actions_extracts_unique_tmux_actions(self):
         import tmux
 
         orig_json = tmux.JSON_PATH
@@ -543,14 +587,25 @@ class TestTmuxConfig(unittest.TestCase):
                         "definitions": {
                             "CLR": {
                                 "actions": [
-                                    {"tmux": "cancel-copy-mode"},
+                                    {"tmux": "copy_mode_exit"},
                                     {"shell": "clr"},
                                 ]
                             },
-                            "CPY": {
+                            "CPY_TEST": {
                                 "actions": [
-                                    {"shell": "cpy_all"},
+                                    {"tmux": "copy_test_result"},
                                 ]
+                            },
+                            "CPY_ALL": {
+                                "actions": [
+                                    {"tmux": "copy_entire_pane"},
+                                ],
+                                "popup": {
+                                    "actions": [
+                                        {"tmux": "copy_mode_exit"},
+                                        {"shell": "cpy"},
+                                    ]
+                                },
                             },
                         }
                     },
@@ -563,60 +618,124 @@ class TestTmuxConfig(unittest.TestCase):
             self.assertEqual(
                 tmux.get_tmux_actions(),
                 [
-                    ("cancel-copy-mode", "clr"),
+                    "copy_mode_exit",
+                    "copy_entire_pane",
+                    "copy_test_result",
                 ],
             )
         finally:
             tmux.JSON_PATH = orig_json
             os.unlink(json_path)
 
-    def test_tmux_config_for_mixed_shell_then_cancel_action(self):
+    def test_tmux_config_for_copy_mode_exit(self):
         from tmux import build_tmux_config
 
         config = build_tmux_config({
-            ("clr", "cancel-copy-mode"),
-        })
-
-        expected_binding = (
-            'bind-key -T copy-mode User0 '
-            'run-shell "clr" \\; send-keys -X cancel'
-        )
-        expected_vi_binding = (
-            'bind-key -T copy-mode-vi User0 '
-            'run-shell "clr" \\; send-keys -X cancel'
-        )
-
-        self.assertIn(expected_binding, config)
-        self.assertIn(expected_vi_binding, config)
-
-    def test_tmux_config_for_mixed_cancel_and_shell_action(self):
-        from tmux import build_tmux_config
-
-        config = build_tmux_config({
-            ("cancel-copy-mode", "clr"),
+            "copy_mode_exit",
         })
 
         self.assertIn(
             'set -s user-keys[0] "\\e[5;30012~"',
             config,
         )
-        expected_binding = (
-            'bind-key -T copy-mode User0 '
-            'send-keys -X cancel \\; run-shell "clr"'
+        self.assertIn(
+            'bind-key -T copy-mode User0 send-keys -X cancel',
+            config,
         )
-        expected_vi_binding = (
-            'bind-key -T copy-mode-vi User0 '
-            'send-keys -X cancel \\; run-shell "clr"'
+        self.assertIn(
+            'bind-key -T copy-mode-vi User0 send-keys -X cancel',
+            config,
         )
 
-        self.assertIn(expected_binding, config)
-        self.assertIn(expected_vi_binding, config)
+    def test_tmux_config_for_copy_mode_exit_again(self):
+        from tmux import build_tmux_config
+
+        config = build_tmux_config({
+            "copy_mode_exit",
+        })
+
+        self.assertIn(
+            'set -s user-keys[0] "\\e[5;30012~"',
+            config,
+        )
+        self.assertIn(
+            'bind-key -T copy-mode User0 send-keys -X cancel',
+            config,
+        )
+        self.assertIn(
+            'bind-key -T copy-mode-vi User0 send-keys -X cancel',
+            config,
+        )
+
+    def test_tmux_config_copy_helpers_bind_in_root_and_copy_modes(self):
+        from tmux import build_tmux_config
+
+        config = build_tmux_config([
+            "copy_mode_exit",
+            "copy_entire_pane",
+            "copy_test_result",
+        ])
+
+        self.assertIn(
+            'bind-key User1 run-shell "bash -c \'. ~/.termux/helpers.sh && cpy_all\'"',
+            config,
+        )
+        self.assertIn(
+            'bind-key User2 run-shell "bash -c \'. ~/.termux/helpers.sh && cpy_test\'"',
+            config,
+        )
+
+    def test_tmux_config_for_copy_actions(self):
+        from tmux import build_tmux_config
+
+        config = build_tmux_config([
+            "copy_mode_exit",
+            "copy_entire_pane",
+            "copy_test_result",
+        ])
+
+        self.assertIn(
+            'set -s user-keys[0] "\\e[5;30012~"',
+            config,
+        )
+        self.assertIn(
+            'bind-key -T copy-mode User0 send-keys -X cancel',
+            config,
+        )
+        self.assertIn(
+            'bind-key -T copy-mode-vi User0 send-keys -X cancel',
+            config,
+        )
+        self.assertIn(
+            'set -s user-keys[1] "\\e[5;30013~"',
+            config,
+        )
+        self.assertIn(
+            'bind-key -T copy-mode User1 run-shell "bash -c \'. ~/.termux/helpers.sh && cpy_all\'"',
+            config,
+        )
+        self.assertIn(
+            'bind-key -T copy-mode-vi User1 run-shell "bash -c \'. ~/.termux/helpers.sh && cpy_all\'"',
+            config,
+        )
+        self.assertIn(
+            'set -s user-keys[2] "\\e[5;30014~"',
+            config,
+        )
+        self.assertIn(
+            'bind-key -T copy-mode User2 run-shell "bash -c \'. ~/.termux/helpers.sh && cpy_test\'"',
+            config,
+        )
+        self.assertIn(
+            'bind-key -T copy-mode-vi User2 run-shell "bash -c \'. ~/.termux/helpers.sh && cpy_test\'"',
+            config,
+        )
 
     def test_tmux_config_for_cancel_copy_mode(self):
         from tmux import build_tmux_config
 
         config = build_tmux_config({
-            "cancel-copy-mode"
+            "copy_mode_exit"
         })
 
         self.assertIn(

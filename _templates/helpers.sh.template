@@ -135,10 +135,18 @@ cpy() {
 
 
 
+cpy_test() {
+
+    tmux capture-pane -pJ -S - -E '#{cursor_y}' |
+        python -c 'import sys; text=sys.stdin.read(); lines=text.splitlines(keepends=True); patch_failed=[i for i,line in enumerate(lines) if line.strip()=="=============== Patch Failed ================"]; matches=[i for i,line in enumerate(lines) if line.strip().endswith("[100%]") and line.strip()[:-6].rstrip() and all(c in ".FEsxXfPp-" for c in line.strip()[:-6].rstrip())]; start=patch_failed[-1] if patch_failed else (matches[-1] if matches else None); sys.stdout.write("".join(lines[start:]) if start is not None else text)' |
+        termux-clipboard-set
+}
+
+
 cpy_pytest() {
 
     termux-clipboard-get |
-        python -c 'import sys; text=sys.stdin.read(); lines=text.splitlines(keepends=True); matches=[i for i,line in enumerate(lines) if line.strip().endswith("[100%]") and line.strip()[:-6].rstrip() and all(c in ".FEsxXfPp-" for c in line.strip()[:-6].rstrip())]; start=matches[-1] if matches else None; sys.stdout.write("".join(lines[start:]) if start is not None else text)' > "$PREFIX/tmp/cpy_pytest.out"
+        python -c 'import sys; text=sys.stdin.read(); lines=text.splitlines(keepends=True); patch_failed=[i for i,line in enumerate(lines) if line.strip()=="=============== Patch Failed ================"]; matches=[i for i,line in enumerate(lines) if line.strip().endswith("[100%]") and line.strip()[:-6].rstrip() and all(c in ".FEsxXfPp-" for c in line.strip()[:-6].rstrip())]; start=patch_failed[-1] if patch_failed else (matches[-1] if matches else None); sys.stdout.write("".join(lines[start:]) if start is not None else text)' > "$PREFIX/tmp/cpy_pytest.out"
     termux-clipboard-set < "$PREFIX/tmp/cpy_pytest.out"
     rm -f "$PREFIX/tmp/cpy_pytest.out"
 }

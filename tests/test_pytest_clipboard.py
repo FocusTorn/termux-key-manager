@@ -97,7 +97,9 @@ def test_generate_helpers_includes_cpy_pytest():
             with open(helpers_path, "r", encoding="utf-8") as f:
                 content = f.read()
 
+            assert "cpy_test()" in content
             assert "cpy_pytest()" in content
+            assert "tmux capture-pane -pJ -S - -E '#{cursor_y}'" in content
             assert "termux-clipboard-get" in content
             assert "termux-clipboard-set" in content
         finally:

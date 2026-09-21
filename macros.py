@@ -41,7 +41,15 @@ def shell_to_macro(command):
 
 
 TMUX_ACTION_SEQUENCES = {
-    "cancel-copy-mode": "\x1b[5;30012~",
+    "copy_mode_exit": "\x1b[5;30012~",
+    "copy_entire_pane": "\x1b[5;30013~",
+    "copy_test_result": "\x1b[5;30014~",
+}
+
+TMUX_ACTION_COMMANDS = {
+    "copy_mode_exit": None,
+    "copy_entire_pane": "bash -c '. ~/.termux/helpers.sh && cpy_all'",
+    "copy_test_result": "bash -c '. ~/.termux/helpers.sh && cpy_test'",
 }
 
 

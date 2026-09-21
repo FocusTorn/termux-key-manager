@@ -55,7 +55,7 @@
 
         "CLR": {
             "actions": [
-                { "tmux": "cancel-copy-mode" },
+                { "tmux": "copy_mode_exit" },
                 { "shell": "clr" }
             ],
             "display": "❌",
@@ -68,8 +68,7 @@
         "CPY_TEST": {
             "display": "🧪",
             "actions": [
-                { "shell": "cpy_all" },
-                { "shell": "cpy_pytest" }
+                { "tmux": "copy_test_result" }
             ]
         },
 
@@ -84,13 +83,12 @@
         "CPY_ALL": {
             "display": "📄",
             "actions": [
-                { "tmux": "cancel-copy-mode" },
-                { "shell": "cpy_all" }
+                { "tmux": "copy_entire_pane" }
             ],
             "popup": {
                 "display": "COPY",
                 "actions": [
-                    { "tmux": "cancel-copy-mode" },
+                    { "tmux": "copy_mode_exit" },
                     { "shell": "cpy" }
                 ]
             }
