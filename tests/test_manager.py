@@ -252,6 +252,72 @@ printf '%s\\n' \
             finally:
                 helpers.HELPERS_PATH = original_helpers_path
 
+    def _run_edit(self, source, spec):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            helpers_path = os.path.join(tmpdir, "helpers.sh")
+            target_path = os.path.join(tmpdir, "target.txt")
+            original_helpers_path = helpers.HELPERS_PATH
+            helpers.HELPERS_PATH = helpers_path
+            try:
+                generate_helpers()
+                with open(target_path, "wb") as f:
+                    f.write(source)
+
+                script = f"""\
+source "{helpers_path}"
+edit_create "{target_path}" <<'EOF'
+{spec}EOF
+edit_execute
+"""
+                return subprocess.run(
+                    ["bash", "-c", script],
+                    capture_output=True,
+                    text=True,
+                ), Path(target_path).read_bytes()
+            finally:
+                helpers.HELPERS_PATH = original_helpers_path
+
+    def test_edit_execute_replaces_unique_match(self):
+        result, content = self._run_edit(
+            b"alpha\nbeta\ngamma\n",
+            "--- old\nbeta\n--- new\nBETA\n",
+        )
+
+        self.assertEqual(result.returncode, 0)
+        self.assertEqual(content, b"alpha\nBETA\ngamma\n")
+
+    def test_edit_execute_preserves_replacement_trailing_newline(self):
+        result, content = self._run_edit(
+            b"alpha\nold line\nnext line\ngamma\n",
+            "--- old\nold line\nnext line\n--- new\nnew line\n",
+        )
+
+        self.assertEqual(result.returncode, 0)
+        self.assertEqual(content, b"alpha\nnew line\ngamma\n")
+
+    def test_edit_execute_rejects_missing_match_without_writing(self):
+        source = b"alpha\nbeta\ngamma\n"
+        result, content = self._run_edit(
+            source,
+            "--- old\nbetaa\n--- new\nBETA\n",
+        )
+
+        self.assertNotEqual(result.returncode, 0)
+        self.assertEqual(content, source)
+        self.assertIn("exact text not found", result.stderr)
+        self.assertIn("possible match at line 2 (89%)", result.stderr)
+
+    def test_edit_execute_rejects_ambiguous_match_without_writing(self):
+        source = b"alpha\nbeta\ngamma\nbeta\n"
+        result, content = self._run_edit(
+            source,
+            "--- old\nbeta\n--- new\nBETA\n",
+        )
+
+        self.assertNotEqual(result.returncode, 0)
+        self.assertEqual(content, source)
+        self.assertIn("exact text occurs 2 times", result.stderr)
+
     def test_generate_helpers(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             json_path = os.path.join(tmpdir, "macros.jsonc")

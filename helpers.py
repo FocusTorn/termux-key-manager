@@ -127,7 +127,8 @@ export HISTIGNORE='{histignore}'
 edit_create() {{
 
     __EDIT_TARGET="$1"
-    __EDIT_SPEC="$(cat)"
+    __EDIT_SPEC="$(cat; printf '\037')"
+    __EDIT_SPEC="${{__EDIT_SPEC%$'\037'}}"
 }}
 
 
@@ -189,13 +190,18 @@ for size in range(max(1, len(old_lines) - 2), len(old_lines) + 3):
 
     for start in range(len(target_lines) - size + 1):
         candidate = target_lines[start:start + size]
-        ratio = difflib.SequenceMatcher(None, old_lines, candidate).ratio()
+        candidate_text = "\\n".join(candidate)
+        old_text = "\\n".join(old_lines)
+        ratio = difflib.SequenceMatcher(None, old_text, candidate_text).ratio()
         best.append((ratio, start + 1, candidate))
 
 for ratio, start, candidate in sorted(best, reverse=True)[:3]:
-    print(f"  possible match at line {{start}} ({{ratio:.0%}})")
+    print(
+        f"  possible match at line {{start}} ({{ratio:.0%}})",
+        file=sys.stderr,
+    )
     for line in candidate:
-        print(f"    {{line}}")
+        print(f"    {{line}}", file=sys.stderr)
 
 raise SystemExit(1)
 PY_EDIT
@@ -203,13 +209,13 @@ PY_EDIT
 
 
 refresh() {{
-    local _tkm_was_in_tmux=0
+    # local _tkm_was_in_tmux=0
 
-    if [ -n "$TMUX" ]; then
-        _tkm_was_in_tmux=1
-    elif ! tmux has-session 2>/dev/null; then
-        tmux new-session -d -c "$HOME"
-    fi
+    # if [ -n "$TMUX" ]; then
+    #     _tkm_was_in_tmux=1
+    # elif ! tmux has-session 2>/dev/null; then
+    #     tmux new-session -d -c "$HOME"
+    # fi
 
     if python "$HOME/projects/termux-key-manager/update.py"; then
 
@@ -221,10 +227,13 @@ refresh() {{
 
     fi
     source ~/.bashrc
+    termux-reload-settings
+    tmux source-file ~/.tmux.conf
 
-    if [ "$_tkm_was_in_tmux" -eq 0 ]; then
-        exec tmux attach-session
-    fi
+
+    # if [ "$_tkm_was_in_tmux" -eq 0 ]; then
+    #     exec tmux attach-session
+    # fi
 }}
 
 
