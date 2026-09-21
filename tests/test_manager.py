@@ -347,7 +347,7 @@ edit_execute
                 self.assertIn("echo hello", content)
                 self.assertIn("refresh()", content)
                 self.assertIn(
-                    'tmux new-session -d -c "$HOME"',
+                    'exec tmux new-session -c "$HOME"',
                     content,
                 )
                 self.assertIn('_tkm_filter_copy_scaffold() {', content)
