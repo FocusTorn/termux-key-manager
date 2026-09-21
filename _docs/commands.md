@@ -36,11 +36,11 @@ The generated `HISTIGNORE` currently includes the shell helpers used by the macr
 
 ## cpy
 
-Captures the current tmux pane, removes the triggering `cpy` command, removes trailing blank lines, and sends the result to `termux-clipboard-set`.
+Captures the current tmux pane, removes terminal prompt scaffolding lines including prompt-only lines and the prompt line containing the triggering `cpy` command, removes trailing blank lines, and sends the result to `termux-clipboard-set`.
 
 ## cpy_all
 
-Captures the current tmux pane including scrollback, removes the triggering `cpy_all` command, removes trailing blank lines, and sends the result to `termux-clipboard-set`.
+Captures the current tmux pane including scrollback, removes terminal prompt scaffolding lines including prompt-only lines and the prompt line containing the triggering `cpy_all` command, removes trailing blank lines, and sends the result to `termux-clipboard-set`.
 
 ## cpy_pytest
 

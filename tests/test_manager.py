@@ -1,8 +1,10 @@
 import unittest
+import subprocess
+import tempfile
 import sys
 import os
-import tempfile
 import json
+from pathlib import Path
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
@@ -197,7 +199,6 @@ class TestTermuxKeyManager(unittest.TestCase):
             helpers.BASHRC_PATH = bashrc_path
             try:
                 update_bashrc(["echo one", "cpy"])
-                self.assertTrue(os.path.exists(bashrc_path))
                 with open(bashrc_path, "r", encoding="utf-8") as f:
                     content = f.read()
                 self.assertIn("export HISTIGNORE='echo one:cpy*'", content)
@@ -210,6 +211,46 @@ class TestTermuxKeyManager(unittest.TestCase):
                 self.assertNotIn("echo one", content)
             finally:
                 helpers.BASHRC_PATH = original_bashrc
+
+    def test_copy_scaffold_filter_removes_prompt_lines(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            helpers_path = os.path.join(tmpdir, "helpers.sh")
+            original_helpers_path = helpers.HELPERS_PATH
+            helpers.HELPERS_PATH = helpers_path
+            try:
+                generate_helpers()
+
+                script = f"""
+source "{helpers_path}"
+printf '%s\\n' \
+    '~/projects/old $' \
+    '~/projects/old $ cpy' \
+    'REAL OUTPUT LINE 1' \
+    '/data/data/com.termux/files/home $' \
+    '/data/data/com.termux/files/home $ cpy_all' \
+    'REAL OUTPUT LINE 2' \
+    'ordinary $ output' \
+    'another real line' |
+    _tkm_filter_copy_scaffold cpy
+"""
+                result = subprocess.run(
+                    ["bash", "-c", script],
+                    capture_output=True,
+                    text=True,
+                    check=True,
+                )
+
+                self.assertEqual(
+                    result.stdout,
+                    "REAL OUTPUT LINE 1\n"
+                    "/data/data/com.termux/files/home $ cpy_all\n"
+                    "REAL OUTPUT LINE 2\n"
+                    "ordinary $ output\n"
+                    "another real line\n",
+                )
+                self.assertEqual(result.stderr, "")
+            finally:
+                helpers.HELPERS_PATH = original_helpers_path
 
     def test_generate_helpers(self):
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -235,17 +276,25 @@ class TestTermuxKeyManager(unittest.TestCase):
 
             try:
                 generate_helpers()
-                self.assertTrue(os.path.exists(helpers_path))
                 with open(helpers_path, "r", encoding="utf-8") as f:
                     content = f.read()
                 self.assertIn("echo hello", content)
                 self.assertIn("refresh()", content)
+                self.assertIn(
+                    'tmux new-session -d -c "$HOME"',
+                    content,
+                )
                 self.assertIn('_tkm_filter_copy_scaffold() {', content)
-                self.assertIn('awk -v prompt="$prompt" -v command="$command"', content)
-                self.assertIn('_tkm_filter_copy_scaffold cpy', content)
-                self.assertIn('_tkm_filter_copy_scaffold cpy_all', content)
-                mode = os.stat(helpers_path).st_mode & 0o777
-                self.assertEqual(mode, 0o700)
+                self.assertIn('awk -v command="$command"', content)
+                self.assertIn('marker = index(line, " $")', content)
+                self.assertIn('prefix = substr(line, 1, marker - 1)', content)
+                self.assertIn('suffix = substr(line, marker)', content)
+                self.assertIn('suffix == " $ " command', content)
+                self.assertIn("tmux capture-pane -pJ |", content)
+                self.assertIn("tmux capture-pane -pJ -S - |", content)
+                self.assertIn("sed 's/[[:space:]]*$//' |", content)
+                self.assertIn("tmux load-buffer -w -", content)
+                self.assertIn("termux-clipboard-set < \"$PREFIX/tmp/cpy_pytest.out\"", content)
             finally:
                 helpers.JSON_PATH = orig_json
                 helpers.HELPERS_PATH = orig_helpers
@@ -290,7 +339,6 @@ class TestTermuxKeyManager(unittest.TestCase):
 
             try:
                 build_termux_layout()
-                self.assertTrue(os.path.exists(props_path))
                 with open(props_path, "r", encoding="utf-8") as f:
                     content = f.read()
                 self.assertIn("extra-keys =", content)
@@ -342,8 +390,12 @@ class TestTermuxKeyManager(unittest.TestCase):
             try:
                 code = update.main()
                 self.assertEqual(code, 0)
-                self.assertTrue(os.path.exists(helpers_path))
-                self.assertTrue(os.path.exists(props_path))
+                with open(helpers_path, "r", encoding="utf-8") as f:
+                    helpers_content = f.read()
+                with open(props_path, "r", encoding="utf-8") as f:
+                    props_content = f.read()
+                self.assertIn("AUTO-GENERATED", helpers_content)
+                self.assertIn("extra-keys =", props_content)
             finally:
                 config.JSON_PATH = orig_json
                 helpers.JSON_PATH = orig_json
@@ -361,6 +413,91 @@ if __name__ == "__main__":
 
 
 class TestTmuxConfig(unittest.TestCase):
+
+    def test_get_tmux_actions_preserves_mixed_action_sequence(self):
+        import tmux
+
+        orig_json = tmux.JSON_PATH
+
+        try:
+            with tempfile.NamedTemporaryFile(
+                mode="w",
+                suffix=".jsonc",
+                delete=False,
+            ) as f:
+                json.dump(
+                    {
+                        "definitions": {
+                            "CLR": {
+                                "actions": [
+                                    {"tmux": "cancel-copy-mode"},
+                                    {"shell": "clr"},
+                                ]
+                            },
+                            "CPY": {
+                                "actions": [
+                                    {"shell": "cpy_all"},
+                                ]
+                            },
+                        }
+                    },
+                    f,
+                )
+                json_path = f.name
+
+            tmux.JSON_PATH = json_path
+
+            self.assertEqual(
+                tmux.get_tmux_actions(),
+                [
+                    ("cancel-copy-mode", "clr"),
+                ],
+            )
+        finally:
+            tmux.JSON_PATH = orig_json
+            os.unlink(json_path)
+
+    def test_tmux_config_for_mixed_shell_then_cancel_action(self):
+        from tmux import build_tmux_config
+
+        config = build_tmux_config({
+            ("clr", "cancel-copy-mode"),
+        })
+
+        expected_binding = (
+            'bind-key -T copy-mode User0 '
+            'run-shell "clr" \\; send-keys -X cancel'
+        )
+        expected_vi_binding = (
+            'bind-key -T copy-mode-vi User0 '
+            'run-shell "clr" \\; send-keys -X cancel'
+        )
+
+        self.assertIn(expected_binding, config)
+        self.assertIn(expected_vi_binding, config)
+
+    def test_tmux_config_for_mixed_cancel_and_shell_action(self):
+        from tmux import build_tmux_config
+
+        config = build_tmux_config({
+            ("cancel-copy-mode", "clr"),
+        })
+
+        self.assertIn(
+            'set -s user-keys[0] "\\e[5;30012~"',
+            config,
+        )
+        expected_binding = (
+            'bind-key -T copy-mode User0 '
+            'send-keys -X cancel \\; run-shell "clr"'
+        )
+        expected_vi_binding = (
+            'bind-key -T copy-mode-vi User0 '
+            'send-keys -X cancel \\; run-shell "clr"'
+        )
+
+        self.assertIn(expected_binding, config)
+        self.assertIn(expected_vi_binding, config)
 
     def test_tmux_config_for_cancel_copy_mode(self):
         from tmux import build_tmux_config

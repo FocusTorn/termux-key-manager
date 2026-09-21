@@ -6,7 +6,6 @@ from config import JSON_PATH, TMUX_CONF_PATH
 from jsonc import strip_comments
 from macros import TMUX_ACTION_SEQUENCES
 
-
 TMUX_START = "# >>> termux-key-manager tmux >>>"
 TMUX_END = "# <<< termux-key-manager tmux <<<"
 
@@ -18,15 +17,25 @@ def get_tmux_actions():
     actions = []
 
     for definition in data.get("definitions", {}).values():
-        for action in definition.get("actions", []):
-            if isinstance(action, dict) and "tmux" in action:
-                actions.append(action["tmux"])
-
-        popup = definition.get("popup")
-        if isinstance(popup, dict):
-            for action in popup.get("actions", []):
-                if isinstance(action, dict) and "tmux" in action:
-                    actions.append(action["tmux"])
+        for action_list in (
+            definition.get("actions", []),
+            (
+                definition.get("popup", {}).get("actions", [])
+                if isinstance(definition.get("popup"), dict)
+                else []
+            ),
+        ):
+            if any(
+                isinstance(action, dict) and "tmux" in action for action in action_list
+            ):
+                actions.append(
+                    tuple(
+                        action.get("tmux", action.get("shell"))
+                        for action in action_list
+                        if isinstance(action, dict)
+                        and ("tmux" in action or "shell" in action)
+                    )
+                )
 
     return list(dict.fromkeys(actions))
 
@@ -40,29 +49,44 @@ def build_tmux_config(actions):
     ]
 
     for index, action in enumerate(actions):
-        try:
-            sequence = TMUX_ACTION_SEQUENCES[action]
-        except KeyError:
-            raise ValueError(
-                f"unknown tmux action: {action}"
+        if isinstance(action, tuple):
+            tmux_action = next(
+                (
+                    item for item in action
+                    if item in TMUX_ACTION_SEQUENCES
+                ),
+                None,
             )
+            if tmux_action is None:
+                raise ValueError("mixed action has no tmux action")
+
+            sequence = TMUX_ACTION_SEQUENCES[tmux_action]
+            binding_actions = action
+        else:
+            try:
+                sequence = TMUX_ACTION_SEQUENCES[action]
+            except KeyError:
+                raise ValueError(f"unknown tmux action: {action}")
+            binding_actions = (action,)
 
         escaped = (
-            sequence.encode("unicode_escape")
-            .decode("ascii")
-            .replace(r"\x1b", r"\e")
+            sequence.encode("unicode_escape").decode("ascii").replace(r"\x1b", r"\e")
         )
-        lines.append(
-            f'set -s user-keys[{index}] "{escaped}"'
-        )
+        lines.append(f'set -s user-keys[{index}] "{escaped}"')
 
         user_key = f"User{index}"
-        lines.append(
-            f"bind-key -T copy-mode {user_key} send-keys -X cancel"
-        )
-        lines.append(
-            f"bind-key -T copy-mode-vi {user_key} send-keys -X cancel"
-        )
+        binding_parts = []
+
+        for item in binding_actions:
+            if item in TMUX_ACTION_SEQUENCES:
+                binding_parts.append("send-keys -X cancel")
+            else:
+                binding_parts.append(f'run-shell "{item}"')
+
+        binding = " \\; ".join(binding_parts)
+
+        lines.append(f"bind-key -T copy-mode {user_key} {binding}")
+        lines.append(f"bind-key -T copy-mode-vi {user_key} {binding}")
 
     return "\n".join(lines)
 
@@ -84,9 +108,7 @@ def update_tmux_conf(config):
     )
 
     pattern = re.compile(
-        re.escape(TMUX_START)
-        + r".*?"
-        + re.escape(TMUX_END),
+        re.escape(TMUX_START) + r".*?" + re.escape(TMUX_END),
         re.DOTALL,
     )
 

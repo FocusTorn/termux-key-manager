@@ -24,6 +24,7 @@ def main():
         )
         return 1
 
+    print()
     print(
         "✅ Termux configuration updated"
     )
