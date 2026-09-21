@@ -2,7 +2,12 @@ import json
 import os
 from pathlib import Path
 
-from config import BASHRC_PATH, HELPERS_PATH, JSON_PATH
+from config import (
+    BASHRC_PATH,
+    HELPERS_PATH,
+    JSON_PATH,
+    TKM_REFRESH_PATH,
+)
 
 BASHRC_START = "# >>> termux-key-manager history >>>"
 BASHRC_END = "# <<< termux-key-manager history <<<"
@@ -126,6 +131,19 @@ def generate_helpers():
         f.write(helpers)
 
     os.chmod(HELPERS_PATH, 0o700)
+
+    refresh_template = os.path.join(
+        os.path.dirname(os.path.abspath(__file__)),
+        "_templates",
+        "tkm-refresh.template",
+    )
+
+    refresh = Path(refresh_template).read_text(encoding="utf-8")
+
+    with open(TKM_REFRESH_PATH, "w", encoding="utf-8") as f:
+        f.write(refresh)
+
+    os.chmod(TKM_REFRESH_PATH, 0o700)
 
     update_bashrc(shell_commands)
 

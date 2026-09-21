@@ -46,6 +46,11 @@ HELPERS_PATH = os.path.join(
     "helpers.sh"
 )
 
+TKM_REFRESH_PATH = os.path.join(
+    TERMUX_DIR,
+    "tkm-refresh"
+)
+
 TMUX_CONF_PATH = os.path.join(
     TERMUX_HOME,
     ".tmux.conf"

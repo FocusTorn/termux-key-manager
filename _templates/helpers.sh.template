@@ -96,28 +96,7 @@ PY_EDIT
 
 
 refresh() {
-    if [ -n "$TMUX" ]; then
-        if python "$HOME/projects/termux-key-manager/update.py"; then
-            printf '%s\n' '✓ Termux configuration updated'
-            source ~/.bashrc &&
-            printf '%s\n' '✓ ~/.bashrc sourced' &&
-            tmux source-file ~/.tmux.conf &&
-            printf '%s\n' '✓ ~/.tmux.conf sourced'
-        fi
-        return
-    fi
-
-    if tmux list-sessions >/dev/null 2>&1; then
-        tmux kill-server
-    fi
-
-    if python "$HOME/projects/termux-key-manager/update.py"; then
-        printf '%s\n' '✓ Termux configuration updated'
-        source ~/.bashrc &&
-        printf '%s\n' '✓ ~/.bashrc sourced'
-        printf '%s\n' '✓ Starting fresh tmux session'
-        exec tmux new-session -c "$HOME"
-    fi
+    "$HOME/.termux/tkm-refresh"
 }
 
 

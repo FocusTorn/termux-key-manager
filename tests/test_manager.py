@@ -318,10 +318,44 @@ edit_execute
         self.assertEqual(content, source)
         self.assertIn("exact text occurs 2 times", result.stderr)
 
+    def test_edit_execute_rejects_missing_markers_without_writing(self):
+        source = b"alpha\nbeta\ngamma\n"
+        result, content = self._run_edit(
+            source,
+            "beta\n--- new\nBETA\n",
+        )
+
+        self.assertNotEqual(result.returncode, 0)
+        self.assertEqual(content, source)
+        self.assertIn("requires --- old and --- new", result.stderr)
+
+    def test_edit_execute_rejects_old_marker_not_first_without_writing(self):
+        source = b"alpha\nbeta\ngamma\n"
+        result, content = self._run_edit(
+            source,
+            "prefix\n--- old\nbeta\n--- new\nBETA\n",
+        )
+
+        self.assertNotEqual(result.returncode, 0)
+        self.assertEqual(content, source)
+        self.assertIn("must begin with --- old", result.stderr)
+
+    def test_edit_execute_rejects_empty_old_text_without_writing(self):
+        source = b"alpha\nbeta\ngamma\n"
+        result, content = self._run_edit(
+            source,
+            "--- old\n--- new\nBETA\n",
+        )
+
+        self.assertNotEqual(result.returncode, 0)
+        self.assertEqual(content, source)
+        self.assertIn("old text is empty", result.stderr)
+
     def test_generate_helpers(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             json_path = os.path.join(tmpdir, "macros.jsonc")
             helpers_path = os.path.join(tmpdir, "helpers.sh")
+            refresh_path = os.path.join(tmpdir, "tkm-refresh")
             bashrc_path = os.path.join(tmpdir, ".bashrc")
 
             data = {
@@ -334,10 +368,12 @@ edit_execute
 
             orig_json = helpers.JSON_PATH
             orig_helpers = helpers.HELPERS_PATH
+            orig_refresh = helpers.TKM_REFRESH_PATH
             orig_bashrc = helpers.BASHRC_PATH
 
             helpers.JSON_PATH = json_path
             helpers.HELPERS_PATH = helpers_path
+            helpers.TKM_REFRESH_PATH = refresh_path
             helpers.BASHRC_PATH = bashrc_path
 
             try:
@@ -345,10 +381,20 @@ edit_execute
                 with open(helpers_path, "r", encoding="utf-8") as f:
                     content = f.read()
                 self.assertIn("echo hello", content)
-                self.assertIn("refresh()", content)
+                self.assertIn("refresh() {", content)
+                self.assertIn('    "$HOME/.termux/tkm-refresh"', content)
+
+                with open(refresh_path, "r", encoding="utf-8") as f:
+                    refresh_content = f.read()
+
+                self.assertEqual(
+                    os.stat(refresh_path).st_mode & 0o777,
+                    0o700,
+                )
+
                 self.assertIn(
                     'exec tmux new-session -c "$HOME"',
-                    content,
+                    refresh_content,
                 )
                 self.assertIn('_tkm_filter_copy_scaffold() {', content)
                 self.assertIn('awk -v command="$command"', content)
@@ -364,6 +410,7 @@ edit_execute
             finally:
                 helpers.JSON_PATH = orig_json
                 helpers.HELPERS_PATH = orig_helpers
+                helpers.TKM_REFRESH_PATH = orig_refresh
                 helpers.BASHRC_PATH = orig_bashrc
 
     def test_remove_extra_keys(self):
