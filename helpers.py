@@ -7,6 +7,7 @@ from config import (
     HELPERS_PATH,
     JSON_PATH,
     TKM_REFRESH_PATH,
+    ZSHRC_PATH,
 )
 
 BASHRC_START = "# >>> termux-key-manager history >>>"

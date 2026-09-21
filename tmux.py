@@ -4,7 +4,11 @@ import re
 
 from config import JSON_PATH, TMUX_CONF_PATH
 from jsonc import strip_comments
-from macros import TMUX_ACTION_COMMANDS, TMUX_ACTION_SEQUENCES
+from macros import (
+    TMUX_ACTION_COMMANDS,
+    TMUX_ACTION_NATIVE,
+    TMUX_ACTION_SEQUENCES,
+)
 
 TMUX_START = "# >>> termux-key-manager tmux >>>"
 TMUX_END = "# <<< termux-key-manager tmux <<<"
@@ -44,6 +48,15 @@ def build_tmux_config(actions):
         "set -g assume-paste-time 0",
     ]
 
+    for index in range(6):
+        lines.append(f"set -s -u user-keys[{index}]")
+
+    for index in range(6):
+        user_key = f"User{index}"
+        lines.append(f"unbind-key {user_key}")
+        lines.append(f"unbind-key -T copy-mode {user_key}")
+        lines.append(f"unbind-key -T copy-mode-vi {user_key}")
+
     for index, action in enumerate(actions):
         try:
             sequence = TMUX_ACTION_SEQUENCES[action]
@@ -59,13 +72,25 @@ def build_tmux_config(actions):
         command = TMUX_ACTION_COMMANDS[action]
 
         if command is None:
-            binding = "send-keys -X cancel"
+            root_binding = "send-keys -X cancel"
+            copy_mode_binding = root_binding
+            copy_mode_vi_binding = root_binding
+        elif action in TMUX_ACTION_NATIVE:
+            root_binding = command["root"]
+            copy_mode_binding = command["copy-mode"]
+            copy_mode_vi_binding = command["copy-mode-vi"]
         else:
-            binding = f'run-shell "{command}"'
-            lines.append(f"bind-key {user_key} {binding}")
+            root_binding = f'run-shell "{command}"'
+            copy_mode_binding = root_binding
+            copy_mode_vi_binding = root_binding
 
-        lines.append(f"bind-key -T copy-mode {user_key} {binding}")
-        lines.append(f"bind-key -T copy-mode-vi {user_key} {binding}")
+        lines.append(f"bind-key -n {user_key} {root_binding}")
+        lines.append(
+            f"bind-key -T copy-mode {user_key} {copy_mode_binding}"
+        )
+        lines.append(
+            f"bind-key -T copy-mode-vi {user_key} {copy_mode_vi_binding}"
+        )
 
     return "\n".join(lines)
 

@@ -55,8 +55,7 @@
 
         "CLR": {
             "actions": [
-                { "tmux": "copy_mode_exit" },
-                { "shell": "clr" }
+                { "tmux": "clear_terminal" }
             ],
             "display": "❌",
             "popup": {

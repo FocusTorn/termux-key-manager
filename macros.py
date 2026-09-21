@@ -44,12 +44,23 @@ TMUX_ACTION_SEQUENCES = {
     "copy_mode_exit": "\x1b[5;30012~",
     "copy_entire_pane": "\x1b[5;30013~",
     "copy_test_result": "\x1b[5;30014~",
+    "clear_terminal": "\x1b[5;30015~",
 }
+
+TMUX_ACTION_NATIVE = {
+    "clear_terminal",
+}
+
 
 TMUX_ACTION_COMMANDS = {
     "copy_mode_exit": None,
     "copy_entire_pane": "bash -c '. ~/.termux/helpers.sh && cpy_all'",
     "copy_test_result": "bash -c '. ~/.termux/helpers.sh && cpy_test'",
+    "clear_terminal": {
+        "root": "send-keys C-u \\; send-keys -R \\; clear-history \\; send-keys C-l",
+        "copy-mode": "send-keys -X cancel \\; send-keys -R \\; clear-history \\; send-keys C-l",
+        "copy-mode-vi": "send-keys -X cancel \\; send-keys -R \\; clear-history \\; send-keys C-l",
+    },
 }
 
 

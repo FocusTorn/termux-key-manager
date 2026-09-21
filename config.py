@@ -60,3 +60,8 @@ BASHRC_PATH = os.path.join(
     TERMUX_HOME,
     ".bashrc"
 )
+
+ZSHRC_PATH = os.path.join(
+    TERMUX_HOME,
+    ".zshrc"
+)

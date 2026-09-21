@@ -44,6 +44,32 @@ class TestTermuxKeyManager(unittest.TestCase):
         )
         self.assertNotIn("actions", converted)
 
+    def test_convert_definition_clear_terminal_uses_private_sequence(self):
+        definition = {
+            "actions": [
+                {"tmux": "clear_terminal"},
+            ],
+        }
+
+        converted = convert_definition(definition)
+
+        self.assertEqual(
+            converted["macro"],
+            "\x1b[5;30015~",
+        )
+
+    def test_convert_definition_clear_terminal_has_no_shell_command(self):
+        definition = {
+            "actions": [
+                {"tmux": "clear_terminal"},
+            ],
+        }
+
+        converted = convert_definition(definition)
+
+        self.assertNotIn("clear", converted["macro"])
+        self.assertNotIn("tmux", converted["macro"])
+
     def test_convert_definition_tmux_action(self):
         definition = {
             "actions": [
@@ -162,6 +188,26 @@ class TestTermuxKeyManager(unittest.TestCase):
 
         with self.assertRaises(ValueError):
             convert_definition(definition)
+
+    def test_clr_is_self_contained_after_copy_mode_exit(self):
+        from macros import convert_definition
+
+        definition = {
+            "actions": [
+                {"tmux": "copy_mode_exit"},
+                {
+                    "macro": "CTRL u clear SPACE && SPACE printf SPACE '\\\\e[3J' SPACE && SPACE tmux SPACE clear-history ENTER"
+                },
+            ]
+        }
+
+        result = convert_definition(definition)
+
+        self.assertEqual(
+            result["macro"],
+            "\x1b[5;30012~ CTRL u clear SPACE && SPACE printf SPACE '\\\\e[3J' SPACE && SPACE tmux SPACE clear-history ENTER",
+        )
+        self.assertNotIn("clr", result["macro"])
 
     def test_convert_definition(self):
         self.assertEqual(convert_definition("string"), "string")
@@ -677,11 +723,143 @@ class TestTmuxConfig(unittest.TestCase):
         ])
 
         self.assertIn(
-            'bind-key User1 run-shell "bash -c \'. ~/.termux/helpers.sh && cpy_all\'"',
+            'bind-key -n User1 run-shell "bash -c \'. ~/.termux/helpers.sh && cpy_all\'"',
             config,
         )
         self.assertIn(
-            'bind-key User2 run-shell "bash -c \'. ~/.termux/helpers.sh && cpy_test\'"',
+            'bind-key -n User2 run-shell "bash -c \'. ~/.termux/helpers.sh && cpy_test\'"',
+            config,
+        )
+
+    def test_tmux_config_clear_terminal_uses_native_tmux_binding(self):
+        from tmux import build_tmux_config
+
+        config = build_tmux_config([
+            "clear_terminal",
+        ])
+
+        root = (
+            "bind-key -n User0 "
+            "send-keys C-u \\; "
+            "send-keys -R \\; "
+            "clear-history \\; "
+            "send-keys C-l"
+        )
+        copy_mode = (
+            "bind-key -T copy-mode User0 "
+            "send-keys -X cancel \\; "
+            "send-keys -R \\; "
+            "clear-history \\; "
+            "send-keys C-l"
+        )
+        copy_mode_vi = (
+            "bind-key -T copy-mode-vi User0 "
+            "send-keys -X cancel \\; "
+            "send-keys -R \\; "
+            "clear-history \\; "
+            "send-keys C-l"
+        )
+
+        self.assertIn(root, config)
+        self.assertIn(copy_mode, config)
+        self.assertIn(copy_mode_vi, config)
+        self.assertNotIn(
+            'run-shell "send-keys -X cancel',
+            config,
+        )
+
+    def test_tmux_config_clear_terminal_uses_context_specific_bindings(self):
+        from tmux import build_tmux_config
+
+        config = build_tmux_config([
+            "clear_terminal",
+        ])
+
+        root = (
+            "bind-key -n User0 "
+            "send-keys C-u \\; "
+            "send-keys -R \\; "
+            "clear-history \\; "
+            "send-keys C-l"
+        )
+        copy_mode = (
+            "bind-key -T copy-mode User0 "
+            "send-keys -X cancel \\; "
+            "send-keys -R \\; "
+            "clear-history \\; "
+            "send-keys C-l"
+        )
+        copy_mode_vi = (
+            "bind-key -T copy-mode-vi User0 "
+            "send-keys -X cancel \\; "
+            "send-keys -R \\; "
+            "clear-history \\; "
+            "send-keys C-l"
+        )
+
+        self.assertIn(root, config)
+        self.assertIn(copy_mode, config)
+        self.assertIn(copy_mode_vi, config)
+        self.assertNotIn(
+            "bind-key -n User0 send-keys -X cancel",
+            config,
+        )
+
+    def test_tmux_config_clears_stale_user_keys_and_bindings(self):
+        from tmux import build_tmux_config
+
+        config = build_tmux_config([
+            "copy_mode_exit",
+            "copy_entire_pane",
+            "copy_test_result",
+        ])
+
+        for index in range(6):
+            self.assertIn(
+                f"set -s -u user-keys[{index}]",
+                config,
+            )
+
+        for user_key in [
+            "User0",
+            "User1",
+            "User2",
+            "User3",
+            "User4",
+            "User5",
+        ]:
+            self.assertIn(
+                f"unbind-key {user_key}",
+                config,
+            )
+            self.assertIn(
+                f"unbind-key -T copy-mode {user_key}",
+                config,
+            )
+            self.assertIn(
+                f"unbind-key -T copy-mode-vi {user_key}",
+                config,
+            )
+
+        self.assertIn(
+            'set -s user-keys[0] "\\e[5;30012~"',
+            config,
+        )
+        self.assertIn(
+            'set -s user-keys[1] "\\e[5;30013~"',
+            config,
+        )
+        self.assertIn(
+            'set -s user-keys[2] "\\e[5;30014~"',
+            config,
+        )
+
+        self.assertNotIn(
+            'set -s user-keys[3] "\\e[5;30012~"',
+            config,
+        )
+        self.assertNotIn(
+            "bind-key -T copy-mode User3 send-keys -X cancel",
             config,
         )
 
