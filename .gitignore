@@ -4,3 +4,5 @@ __pycache__/
 .testmondata
 tests/.testmondata
 macros.sh
+
+FETCH_HEAD
