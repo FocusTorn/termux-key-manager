@@ -23,7 +23,10 @@ class TestShellRcUpdates(unittest.TestCase):
                     content = stream.read()
 
                 self.assertTrue(content.startswith("before\n"))
-                self.assertIn("HISTORY_IGNORE=('echo two' 'cpy*')", content)
+                self.assertIn("HISTORY_IGNORE='(echo two|cpy*)'", content)
+                self.assertNotIn("HISTORY_IGNORE=(", content.replace(
+                    "HISTORY_IGNORE='(", ""
+                ))
                 self.assertNotIn("echo one", content)
                 self.assertEqual(content.count(helpers.BASHRC_START), 1)
                 self.assertEqual(content.count(helpers.BASHRC_END), 1)
