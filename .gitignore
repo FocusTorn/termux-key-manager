@@ -2,7 +2,7 @@ __pycache__/
 *.py[cod]
 
 .testmondata
-tests/.testmondata
+_test/.testmondata
 macros.sh
 
 FETCH_HEAD

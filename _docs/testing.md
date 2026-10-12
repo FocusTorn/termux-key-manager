@@ -6,9 +6,9 @@ TKM tests the transformation from declarative source definitions to generated be
 
 Current tests include:
 
-- `tests/test_manager.py`
-- `tests/test_pytest_clipboard.py`
-- `tests/test_tmux_replacement.py`
+- `_test/test_manager.py`
+- `_test/test_pytest_clipboard.py`
+- `_test/test_tmux_replacement.py`
 
 ## test_manager.py
 
@@ -38,6 +38,11 @@ This suite covers:
 ## test_tmux_replacement.py
 
 This suite verifies that replacement of the generated tmux block preserves literal backslash sequences and surrounding user configuration.
+
+## Running the suite
+
+Run the full test suite from the repository root with `./_test/run`.
+The runner invokes pytest against `_test` and forwards any extra arguments.
 
 ## Focused testing
 
