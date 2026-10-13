@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+set -o errexit
+set -o nounset
+set -o pipefail
+
+readonly suite_directory="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+readonly project_root="$(dirname -- "$suite_directory")"
+readonly test_runner="$HOME/bin/test-runner"
+
+# Relative paths are resolved from the project root; absolute paths stay absolute.
+source_dir_relative=''
+
+runner_args=(--working-dir "$project_root")
+if [[ -n "$source_dir_relative" ]]; then
+    if [[ "$source_dir_relative" = /* ]]; then
+        source_dir="$source_dir_relative"
+    else
+        source_dir="$project_root/$source_dir_relative"
+    fi
+    [[ -d "$source_dir" ]] || {
+        printf '_test/run: source directory not found: %s\n' "$source_dir" >&2
+        exit 1
+    }
+    runner_args+=(--source-dir "$source_dir")
+fi
+
+exec "$test_runner" "${runner_args[@]}" "$suite_directory" "$@"
