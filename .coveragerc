@@ -1,5 +1,6 @@
 [run]
 branch = True
+<<<<<<< Updated upstream
 core = pytrace
 omit =
     _test/*
@@ -7,6 +8,13 @@ omit =
 [report]
 omit =
     _test/*
+=======
+omit = _test/*
+
+
+[report]
+omit = _test/*
+>>>>>>> Stashed changes
 
 ; Regexes for lines to exclude from consideration
 exclude_also =
@@ -29,3 +37,7 @@ ignore_errors = True
 
 [html]
 directory = coverage_html_report
+<<<<<<< Updated upstream
+=======
+
+>>>>>>> Stashed changes
