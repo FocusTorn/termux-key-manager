@@ -19,7 +19,10 @@ from the Termux environment. Source-level analysis is recorded in
 | Copy an explicitly selected line range | **PASS** | Clipboard contained exactly the three selected lines |
 | tmux copy-mode pipe to Termux clipboard | **PASS** | The pipe worked for manually selected ranges; the full root-binding path remains unverified |
 | Isolated root-table key recognition | **PASS** | Attached client Ctrl+G displayed `TKM_ROOT_KEY_OK` |
-| Root binding enters copy mode | **PASS** | Copy-mode position indicator appeared after Ctrl+G |\n| Chained `copy-mode` + `history-top` binding | **PASS** | Cursor observed at `1,1` while copy mode remained active |\n| End-to-end root binding with selection and clipboard | **INCONCLUSIVE** | Prior attempt yielded shell command text instead of expected markers |\n| Invocation from `copy-mode` and `copy-mode-vi` | **NOT TESTED** | No actual TKM bindings were exercised in either table |
+| Root binding enters copy mode | **PASS** | Copy-mode position indicator appeared after Ctrl+G |
+| Chained `copy-mode` + `history-top` binding | **PASS** | Cursor observed at `1,1` while copy mode remained active |
+| End-to-end root binding with selection and clipboard | **INCONCLUSIVE** | Prior attempt yielded shell command text instead of expected markers |
+| Invocation from `copy-mode` and `copy-mode-vi` | **NOT TESTED** | No actual TKM bindings were exercised in either table |
 | Exclude a real interactive shell prompt | **NOT TESTED** | The subset test used a printed marker, not a live shell prompt |
 | Locate pytest or `Patch Failed` semantic boundaries | **NOT TESTED** | The test selected a known line range rather than discovering markers |
 | Missing-marker and failure behavior | **NOT TESTED** | No negative semantic-selector test was run |
