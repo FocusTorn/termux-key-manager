@@ -22,7 +22,7 @@ from the Termux environment. Source-level analysis is recorded in
 | Root binding enters copy mode | **PASS** | Copy-mode position indicator appeared after Ctrl+G |
 | Chained `copy-mode` + `history-top` binding | **PASS** | Cursor observed at `1,1` while copy mode remained active |
 | Root binding selection anchor and visible extension | **PASS** | Moving down to line end after beginning selection visibly highlighted fixture lines 1–2 |
-| End-to-end root binding with selection and clipboard | **INCONCLUSIVE** | Prior attempt yielded shell command text instead of expected markers |
+| End-to-end root binding with selection and clipboard | **INCONCLUSIVE** | Earlier attempt yielded literal command text; latest invocation left the clipboard empty, and the active isolated server was not confirmed |
 | Invocation from `copy-mode` and `copy-mode-vi` | **NOT TESTED** | No actual TKM bindings were exercised in either table |
 | Exclude a real interactive shell prompt | **NOT TESTED** | The subset test used a printed marker, not a live shell prompt |
 | Locate pytest or `Patch Failed` semantic boundaries | **NOT TESTED** | The test selected a known line range rather than discovering markers |
@@ -182,6 +182,22 @@ Loading the full command list from a tmux configuration file with `source-file`
 registered the chained binding, after which the selection test passed. Treat
 the first command form as a command-parsing/setup issue, not a selection
 failure.
+
+6. **INCONCLUSIVE — root-binding clipboard attempt.** The binding was extended
+   with `copy-pipe-and-cancel 'termux-clipboard-set'`. The user reported no
+   visible highlight after pressing Ctrl+G and then an empty result from
+   `termux-clipboard-get`. Because `copy-pipe-and-cancel` exits copy mode and
+   clears the selection, the missing highlight alone does not establish that
+   selection failed. The empty clipboard means the end-to-end path was not
+   demonstrated. The transcript did not conclusively identify whether the
+   client was attached to the isolated `tkm-root-key-proof` server, so the
+   binding target also remains unconfirmed.
+
+   Next, sanity-check the current `termux-clipboard-set`/`get` round trip,
+   inspect the isolated server's sessions and stored Ctrl+G binding, and
+   explicitly attach with `tmux -L tkm-root-key-proof attach-session -t proof`
+   before retrying. Do not infer selection or clipboard success from a stored
+   binding or from copy mode closing.
 
 ### Test-fixture lifetime finding
 

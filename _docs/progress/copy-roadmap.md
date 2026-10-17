@@ -78,14 +78,17 @@ the multi-step binding trial.
 
 ### Gate 2 — Prove selection mechanics from the root table
 
-**Status: in progress — selection anchor and visible range passed; clipboard transfer remains unproven.**
+**Status: in progress — selection anchor/range passed; the clipboard attempt returned empty and server/binding context must be confirmed.**
 
 - Bind Ctrl+G to enter copy mode, move to history-top, move to line start,
   and begin selection.
 - [x] Confirm the cursor/selection anchor is at the first marker and that
   moving down to line end visibly selects the first two fixture lines.
-- Extend selection to the intended end, use
-  copy-pipe-and-cancel with termux-clipboard-set, and inspect the clipboard.
+- Extend selection to the intended end and invoke
+  copy-pipe-and-cancel with termux-clipboard-set.
+- [ ] Diagnose the empty clipboard result: verify the current clipboard
+  helper round-trip, inspect the isolated server and stored binding, and
+  explicitly attach to the intended server before retrying.
 - Verify the exact expected text and confirm that before/after markers are
   excluded.
 - Record each successful increment separately in the progress log.

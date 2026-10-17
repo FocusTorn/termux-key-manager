@@ -56,23 +56,33 @@ not established throughout the attempt.
 
 The direct multi-command `bind-key` invocation at the outer zsh prompt returned
 `not in a mode`. Loading the binding from a tmux configuration file with
-`source-file` registered the command list correctly. The current selection
-binding then visibly highlighted the first two fixture lines.
+`source-file` registered the command list correctly. The selection-only
+binding visibly highlighted the first two fixture lines.
+
+The subsequent binding added `copy-pipe-and-cancel 'termux-clipboard-set'`,
+but the reported clipboard was empty. No visible highlight after this command
+is expected because it exits copy mode and clears the selection; it does not
+prove that the copy succeeded. The current result is **INCONCLUSIVE** because
+the client/server used for the copy attempt was not conclusively identified.
 
 ## Immediate next action
 
-Resume at Roadmap Gate 2 using the existing long-lived `proof` session. Keep
-the successful sequence and append `copy-pipe-and-cancel` with
-`termux-clipboard-set` to the root Ctrl+G binding, so the binding copies the
-currently selected first two lines and exits copy mode. Store the sequence in
-a tmux configuration file and load it with `source-file`; then verify it with
-`list-keys`, attach, and press Ctrl+G.
+Diagnose the empty clipboard result before changing the binding again.
 
-Detach back to Termux and inspect `termux-clipboard-get`. Expected content is
-exactly `TKM_CONTEXT_BEFORE` and `TKM_CONTEXT_START` on separate lines, with
-no other marker lines. Keep the test isolated and do not change TKM source.
-After the trial, record the result in the runtime log, update roadmap status,
-and rewrite this handoff last.
+1. From a plain Termux shell, test `printf '%s\\n' TKM_CLIPBOARD_API_TEST | termux-clipboard-set`
+   and confirm `termux-clipboard-get` returns that exact marker.
+2. Inspect the isolated server with `tmux -L tkm-root-key-proof list-sessions`
+   and verify the root Ctrl+G binding with
+   `tmux -L tkm-root-key-proof list-keys -T root C-g`.
+3. Attach explicitly using
+   `tmux -L tkm-root-key-proof attach-session -t proof`, press Ctrl+G once,
+   detach, and inspect the clipboard again.
+
+Keep the binding loaded through the configuration file and `source-file`.
+Do not treat the missing highlight as a selection failure when
+`copy-pipe-and-cancel` closes copy mode. Do not change TKM source. Record the
+next observed result in the runtime log, update the roadmap, and rewrite this
+handoff last.
 
 ## Constraints
 
