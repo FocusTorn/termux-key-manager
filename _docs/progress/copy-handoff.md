@@ -85,29 +85,38 @@ where the interactive trial occurred. The later `copy-mode` trial also passed;
 
 ## Immediate next action
 
-Continue at Roadmap Gate 4 with pytest-result range and prompt exclusion.
-The `Patch Failed` selector is deferred for now.
+Continue at Gate 4 with OSC 133, the preferred marker-based approach. The
+last live-shell probe found no `P`-marked lines; this is a failed discovery
+check, not a reason to switch to prompt-text matching. The `Patch Failed`
+selector remains deferred.
 
-Source-level research found that tmux 3.7c's `capture-pane -F` can prefix
-captured lines with flags, including `P` for prompt lines and `O` for
-output-start lines. This is only a candidate mechanism: the live Termux shell
-must emit OSC 133 markers for those flags to appear.
-
-Run this in the active tmux pane, at a shell prompt, and inspect the returned
-lines for a `P` flag prefix:
+First inspect raw flags in the current pane:
 
 ```sh
-tmux capture-pane -pF -S - | grep -E '^[A-Z-]*P[A-Z-]* ' | tail -n 5
+tmux -V
+tmux capture-pane -pF -S - | tail -n 12 | sed -n 'l'
 ```
 
-If it prints no `P` lines, report that rather than falling back to textual
-prompt matching. Once the real prompt flag is established, prove that the
-latest pytest progress line through the line before the final `P` line is
-selected, with the progress line included and the prompt excluded. Cover
-repeated/missing markers, blank lines, multiline output, and safe failure.
-Add tests to the existing `_test/test_pytest_clipboard.py`; avoid a separate
-pytest isolation harness and use `./_test/run force` for full-suite
-verification. Do not modify TKM source until the contract and tests are clear.
+Then isolate tmux marker handling from normal zsh configuration in a
+disposable session. This emits controlled OSC 133 prompt/output markers and
+checks whether tmux exposes them as `P` and `O` flags:
+
+```sh
+probe="tkm-osc133-probe-$$"
+tmux new-session -d -s "$probe" 'zsh -f' || return
+sleep 0.2
+tmux send-keys -t "$probe:0.0" "printf '\\033]133;A\\033\\\\TKM_OSC133_A_PROBE\\n\\033]133;C\\033\\\\TKM_OSC133_C_PROBE\\n'" Enter
+sleep 0.2
+tmux capture-pane -pF -t "$probe:0.0" -S - | tail -n 12
+tmux kill-session -t "$probe"
+```
+
+If a `P` line and an `O` line appear in the controlled test but the normal
+shell prompt is unmarked, inspect the active zsh prompt framework and its
+supported OSC 133 integration. Do not overwrite prompt hooks by guessing.
+Once real prompt flags are established, test the pytest range contract and
+add tests to the existing `_test/test_pytest_clipboard.py`. Use the project's
+normal runner; do not create an isolated pytest harness.
 
 **Scope decision (2026-10-17):** do not run a `copy-mode-vi` trial. Vi-mode
 proof is intentionally excluded from this refactor's acceptance criteria. The

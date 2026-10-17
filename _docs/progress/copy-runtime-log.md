@@ -26,6 +26,7 @@ from the Termux environment. Source-level analysis is recorded in
 | Invocation from the `copy-mode` table | **PASS** | The isolated Ctrl+G test binding copied the intended two fixture lines to Android clipboard and exited copy mode |
 | Invocation from the `copy-mode-vi` table | **NOT TESTED** | Explicitly excluded from the current acceptance scope by the 2026-10-17 scope decision; no vi-mode trial will be run |
 | Exclude a real interactive shell prompt | **NOT TESTED** | The subset test used a printed marker, not a live shell prompt |
+| Automatic prompt flag from the active shell | **FAIL** | The user-provided `capture-pane -pF` probe returned no `P`-marked lines; raw prefixes and controlled-marker handling remain unverified |
 | Locate pytest or `Patch Failed` semantic boundaries | **NOT TESTED** | The test selected a known line range rather than discovering markers |
 | Missing-marker and failure behavior | **NOT TESTED** | No negative semantic-selector test was run |
 | Native tmux terminal clipboard path without an external command | **NOT TESTED** | The passing clipboard tests used `termux-clipboard-set` as the pipe command |
@@ -316,3 +317,29 @@ For this refactor, the required execution contexts are the root table and
 emacs-style `copy-mode`. Do not run another `copy-mode-vi` trial or treat it
 as a blocker. Continue with semantic subset and prompt-boundary contracts,
 negative cases, behavior tests, then implementation.
+
+
+## 10. OSC 133 prompt-flag discovery (2026-10-17)
+
+**Command supplied and run by the user:**
+
+```sh
+tmux capture-pane -pF -S - | grep -E '^[A-Z-]*P[A-Z-]* ' | tail -n 5
+```
+
+**Observed:** no lines matched the `P` prompt-flag pattern. The probe did
+not demonstrate that the active shell's real prompt is marked by tmux.
+
+**Classification: FAIL for automatic prompt-flag discovery; cause unresolved.**
+This is not evidence that tmux cannot expose OSC 133 marks. The probe filtered
+out all non-matching lines, so it did not show the raw line prefixes. Two
+questions remain separate:
+
+1. Does tmux mark a line when a controlled OSC 133 sequence is emitted?
+2. Does the user's normal zsh prompt emit the marker automatically?
+
+Next, inspect raw `capture-pane -F` prefixes and run a controlled marker probe
+in a disposable `zsh -f` tmux session. If the controlled markers appear as
+`P` and `O` but the normal prompt does not appear as `P`, investigate the
+active zsh prompt integration. Do not switch to visible-prompt matching or
+change production shell configuration before this distinction is established.
