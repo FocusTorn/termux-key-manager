@@ -130,49 +130,57 @@ required contexts, without state leakage.
 
 ### Gate 4 — Prove pytest subset and prompt exclusion
 
-**Status: blocked on marker discovery, not on design.** The live-shell probe
-returned no `P`-marked lines. Root cause is not yet isolated. The
-`Patch Failed` marker range remains deferred.
+**Status: blocked on prompt-marker discovery.** The user's tmux 3.8 capture
+shows no `P` flags. The controlled `zsh -f` plus `send-keys` trial also
+did not show its sentinel text, so it is inconclusive about tmux's handling
+of emitted markers. The `Patch Failed` range remains deferred.
 
-**Preferred boundary mechanism: OSC 133.** `capture-pane -F` exposes tmux's
-line flags derived from OSC 133; it is a way to inspect the markers, not a
-competing boundary strategy. Do not fall back to visible prompt text unless
-evidence shows the marker approach cannot satisfy the requirement.
+**Preferred boundary mechanism: OSC 133.** `capture-pane -F` exposes tmux
+line flags (`P` prompt and `O` output); it is a way to inspect semantic
+markers, not a replacement for them. Do not fall back to visible-prompt text.
 
 **Pytest subset contract**
 
-- Capture all available history with tmux 3.7c line flags
-  (`capture-pane -pF -S -`).
-- Select from the latest valid pytest progress line before the final prompt
-  line, including that progress line.
-- Exclude the final line marked with the tmux prompt flag `P`, and exclude
-  everything after it.
-- Preserve captured text between the boundaries, including blank lines and
+- Capture full available history with `capture-pane -pF -S -`.
+- Start at the latest valid pytest progress line before the final prompt line,
+  including the progress line.
+- Exclude the final line flagged `P` and everything after it.
+- Preserve content between the boundaries, including blank lines and
   multiline failure evidence.
-- If no final prompt marker or no valid pytest progress line exists before it,
-  fail closed without copying a guessed range.
-- A prompt-like line without the `P` flag is ordinary output.
+- Fail closed if either required boundary is missing.
+- A prompt-like line without a `P` flag is ordinary output.
 
 **Required proof sequence**
 
-1. Capture the raw line prefixes and check `tmux -V`; the previous grep
-   returned no `P` lines but hid all other prefixes.
-2. In a disposable `zsh -f` tmux session, emit controlled OSC 133 `A` and
-   `C` sequences and confirm that `capture-pane -F` labels their lines `P`
-   and `O`. This isolates tmux's handling from the user's shell config.
-3. Check whether the ordinary live zsh prompt is marked `P`. If the
-   controlled test passes but the ordinary prompt is unmarked, identify the
-   active prompt framework and configure its supported OSC 133 integration
-   before proceeding; do not guess at or overwrite prompt hooks.
-4. After automatic prompt marking is established, cover repeated progress
-   markers (choose the latest one before the final prompt), missing progress
-   markers, missing prompt markers, blank lines, and multiline output.
-5. Add tests to the existing `_test/test_pytest_clipboard.py` and use the
-   project runner, not a new isolated pytest harness.
+1. Inspect the raw flags from the live shell; the reported sample showed no
+   `P` marks.
+2. Use a disposable pane whose command emits OSC 133 markers directly, rather
+   than typing a nested `printf` through `send-keys`:
 
-**Exit condition:** controlled markers are exposed as expected, the target
-shell's real prompt is reliably marked, and positive/negative cases prove
-the subset range. No TKM source change until the contract and tests are clear.
+   ```sh
+   (
+       probe="tkm-osc133-probe-$$"
+       tmux new-session -d -s "$probe" "sh -c 'printf \"\\033]133;A\\007TKM_OSC133_A_PROBE\\n\\033]133;C\\007TKM_OSC133_C_PROBE\\n\"; sleep 30'" || exit 1
+       trap 'tmux kill-session -t "$probe" 2>/dev/null || true' EXIT
+       sleep 1
+       tmux capture-pane -pF -t "$probe:0.0" -S - | tail -n 12 | sed -n 'l'
+   )
+   ```
+
+   First confirm that both sentinel strings are visible. Only then interpret
+   whether their flags are `P` and `O`.
+3. If controlled markers get the expected flags but the normal zsh prompt
+   does not, identify the active prompt framework and its supported OSC 133
+   integration before changing shell configuration.
+4. Once the real prompt is marked, cover repeated/missing progress markers,
+   missing prompt markers, blank lines, multiline output and safe failure.
+5. Add selector tests to the existing `_test/test_pytest_clipboard.py` and
+   use the normal project runner; do not create an isolated pytest harness.
+
+**Exit condition:** direct marker emission is visibly captured with expected
+flags, the normal prompt is reliably marked, and positive/negative cases prove
+the range contract. No TKM implementation change until the behavior contract
+and tests are clear.
 
 ### Gate 5 — Write behavior tests and implement
 

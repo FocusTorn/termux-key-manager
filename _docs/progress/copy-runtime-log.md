@@ -343,3 +343,27 @@ in a disposable `zsh -f` tmux session. If the controlled markers appear as
 `P` and `O` but the normal prompt does not appear as `P`, investigate the
 active zsh prompt integration. Do not switch to visible-prompt matching or
 change production shell configuration before this distinction is established.
+
+
+## 11. Controlled marker probe did not emit evidence (2026-10-17)
+
+The user reports `tmux 3.8`. Raw capture with `tmux capture-pane -pF`
+showed lines prefixed with `-` (no flags) and a visible `$ ` prompt. No
+`P`-flagged prompt line appeared in the captured sample.
+
+The subsequent controlled trial started a detached `zsh -f` session, sent a
+`printf` command with intended OSC 133 `A` and `C` sequences through
+`tmux send-keys`, and captured its last twelve lines. The result contained
+only dash-prefixed blank lines; neither `TKM_OSC133_A_PROBE` nor
+`TKM_OSC133_C_PROBE` appeared.
+
+**Classification: INCONCLUSIVE (controlled-probe setup).** The capture did
+not show the sentinel text, so it did not prove that the marker payload was
+executed or received. This does not falsify tmux's documented line-flag support
+or OSC 133 as the preferred mechanism.
+
+Next, bypass interactive shell input and have the disposable pane's command
+emit the markers directly. Inspect the entire raw flag-prefixed output. The
+controlled test must first display both sentinel strings; only then can the
+presence or absence of `P` and `O` flags be interpreted. Keep this distinct
+from testing whether the user's ordinary zsh prompt emits OSC 133.
