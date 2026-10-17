@@ -502,9 +502,19 @@ The change:
 **Classification: COMMITTED, RUNTIME NOT TESTED.** Remote source checks
 confirmed the prompt wrapper and C/D hook code are present. No zsh runtime or
 Termux test has yet verified the modified prompt. The user must sync/load the
-new overlay theme before testing it.
+new overlay theme before testing it. Use the UTR G suite's `g l` selector to
+pull and check repository review state; `g n` copies the normalized origin
+URL. These are the canonical Git operations for this workflow.
 
-**Runtime proof after loading the update:**
+**Runtime proof after loading the update:** first sync the overlay and reload
+the shell:
+
+```sh
+cd "$HOME/projects/zsh-customized-overlay" && g l
+exec zsh -l
+```
+
+Then run the output probe in the reloaded shell:
 
 ```sh
 printf '%s\n' 'TKM_OSC133_OUTPUT_PROBE'

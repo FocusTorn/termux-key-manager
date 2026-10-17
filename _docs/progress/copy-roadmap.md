@@ -174,7 +174,15 @@ https://fossies.org/diffs/tmux/3.7c_vs_3.8/cmd-capture-pane.c-diff.html
    `preexec`, and emits D with the command status in a first-position
    `precmd` hook.
 
-4. [ ] Sync/load the committed theme in Termux and run:
+4. [ ] Sync the committed theme from the overlay repository using the UTR
+   G suite, then reload the login shell:
+
+   ```sh
+   cd "$HOME/projects/zsh-customized-overlay" && g l
+   exec zsh -l
+   ```
+
+   After the new shell opens, run:
 
    ```sh
    printf '%s\n' 'TKM_OSC133_OUTPUT_PROBE'

@@ -97,8 +97,15 @@ https://github.com/FocusTorn/zsh-customized-overlay/commit/9a61d8ce444132b55435d
 - C from `preexec` before command output;
 - D plus exit status from a first-position `precmd` hook.
 
-This source change has not yet been runtime-verified. Sync/load the updated
-theme in Termux, then run:
+This source change has not yet been runtime-verified. Sync it with the UTR G
+suite and reload zsh:
+
+```sh
+cd "$HOME/projects/zsh-customized-overlay" && g l
+exec zsh -l
+```
+
+Then run the probe in the reloaded shell:
 
 ```sh
 printf '%s\n' 'TKM_OSC133_OUTPUT_PROBE'
