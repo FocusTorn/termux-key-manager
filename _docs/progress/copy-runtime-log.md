@@ -218,6 +218,11 @@ failure.
    `TKM_CONTEXT_BEFORE\\nTKM_CONTEXT_START`. The shell prompt appeared
    immediately after the second line, consistent with that buffer content.
 
+   The user subsequently confirmed seeing the `TKM-PROOF:proof` status bar and
+   pressing Ctrl+G inside the attached Test Session. This resolves the earlier
+   transcript ambiguity about whether the successful copy was triggered from
+   the intended interactive client.
+
    **Result: PASS for this isolated root-table binding.** The complete path
    selected the expected range and transferred it to Android clipboard through
    `copy-pipe-and-cancel 'termux-clipboard-set'`. The cause of the earlier

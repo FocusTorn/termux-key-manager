@@ -41,6 +41,9 @@ is allowed.
   highlighted fixture lines 1–2 after moving down and to line end.
 - [x] The isolated root Ctrl+G binding copied exactly the two intended
   fixture lines to the Android clipboard through the clipboard pipe.
+- [x] The user confirmed the successful trial was interactive: the
+  `TKM-PROOF:proof` status bar was visible and Ctrl+G was pressed inside the
+  attached Test Session.
 
 These last three checks used a test binding, not TKM's actual configured
 macros. They prove individual tmux operations only.

@@ -71,7 +71,10 @@ binding was loaded and verified, and a subsequent attach/copy/detach cycle
 returned exactly `TKM_CONTEXT_BEFORE` and `TKM_CONTEXT_START`. The buffer
 was 36 bytes with no trailing newline, matching the clipboard output. The
 cause of the initial empty read remains unknown; the end-to-end root binding
-is now **PASS**. This does not prove the other key tables or TKM bindings.
+is now **PASS**. The user confirmed seeing `TKM-PROOF:proof` in the attached
+Test Session and pressing Ctrl+G there, resolving the earlier ambiguity about
+where the interactive trial occurred. This does not prove the other key tables
+or TKM bindings.
 
 ## Immediate next action
 
