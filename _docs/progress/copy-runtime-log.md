@@ -1,13 +1,13 @@
-# R1.3: Native Copy Runtime Evidence
+# Copy Runtime Progress Log
 
-**Date:** 2026-10-16  
-**Purpose:** Record runtime evidence gathered while evaluating replacement of
-TKM's legacy `cpy_*` shell helpers with tmux copy-mode actions.
+**Started:** 2026-10-16  
+**Updated:** 2026-10-17  
+**Purpose:** Record dated runtime evidence, failures and inconclusive trials, and test-harness corrections while evaluating replacement of TKM's legacy `cpy_*` shell helpers with tmux copy-mode actions.
 
 This document records only behavior demonstrated by the test outputs returned
 from the Termux environment. Source-level analysis is recorded in
-[R1.1: tmux Internals](r1_1-tmux-internals.md) and
-[R1.2: TKM Implications](r1_2-tkm-implications.md).
+[R1.1: tmux Internals](../research/r1_1-tmux-internals.md) and
+[R1.2: TKM Implications](../research/r1_2-tkm-implications.md).
 
 ## Evidence summary
 
@@ -17,9 +17,9 @@ from the Termux environment. Source-level analysis is recorded in
 | Copy the available pane history | **PASS** | Clipboard contained all 30 test markers, first through last |
 | Copy only the visible viewport | **PASS** | Clipboard matched visible markers 24 through 30 |
 | Copy an explicitly selected line range | **PASS** | Clipboard contained exactly the three selected lines |
-| tmux copy-mode pipe to Termux clipboard | **PASS** | `copy-pipe-and-cancel 'termux-clipboard-set'` worked in the tests above |
-| Root binding invocation | **NOT TESTED** | No actual TKM root-table binding was exercised |
-| Invocation from `copy-mode` and `copy-mode-vi` | **NOT TESTED** | No actual TKM bindings were exercised in either table |
+| tmux copy-mode pipe to Termux clipboard | **PASS** | The pipe worked for manually selected ranges; the full root-binding path remains unverified |
+| Isolated root-table key recognition | **PASS** | Attached client Ctrl+G displayed `TKM_ROOT_KEY_OK` |
+| Root binding enters copy mode | **PASS** | Copy-mode position indicator appeared after Ctrl+G |\n| Chained `copy-mode` + `history-top` binding | **PASS** | Cursor observed at `1,1` while copy mode remained active |\n| End-to-end root binding with selection and clipboard | **INCONCLUSIVE** | Prior attempt yielded shell command text instead of expected markers |\n| Invocation from `copy-mode` and `copy-mode-vi` | **NOT TESTED** | No actual TKM bindings were exercised in either table |
 | Exclude a real interactive shell prompt | **NOT TESTED** | The subset test used a printed marker, not a live shell prompt |
 | Locate pytest or `Patch Failed` semantic boundaries | **NOT TESTED** | The test selected a known line range rather than discovering markers |
 | Missing-marker and failure behavior | **NOT TESTED** | No negative semantic-selector test was run |
@@ -142,7 +142,43 @@ The tmux runtime version was not recorded alongside the outputs summarized
 here. The source-level investigation's target version is documented
 separately in R1.1.
 
-## 6. Required next proof gates
+## 6. Root-key binding trials (2026-10-17)
+
+These were isolated tmux probes, not TKM's configured macro bindings. They
+establish individual key-table and copy-mode operations, not the complete copy
+contract.
+
+1. **PASS — root key dispatch.** A root-table binding mapped Ctrl+G to a
+   five-second `display-message`. Pressing Ctrl+G in the attached client
+   visibly displayed `TKM_ROOT_KEY_OK`.
+2. **PASS — copy-mode entry.** Rebinding Ctrl+G to `copy-mode` displayed the
+   copy-mode position indicator.
+3. **PASS — chained history-top.** The binding
+   `copy-mode \; send-keys -X -t proof:0.0 history-top` entered copy mode and
+   moved the cursor to `1,1`.
+4. **INCONCLUSIVE — full selection and clipboard chain.** An earlier combined
+   binding did not return the expected marker lines; the clipboard instead
+   contained the literal `termux-clipboard-get` command text. A later state
+   check reported `PANE_IN_MODE=0`, and a subsequent server had lost its
+   binding. The test did not prove a successful full chain, but it also did
+   not isolate the cause to selection or clipboard piping.
+
+### Test-fixture lifetime finding
+
+The isolated pane's foreground command ended with `sleep 300`, a five-minute
+lifetime. The 2026-10-17 session was created around 03:18 and the next attach
+attempt around 03:23 returned `[exited]`. The earlier session was created
+around 22:43 and inspected around 22:48, with the same disappearance. Both
+intervals match expiration of `sleep 300`; when that pane command exits, the
+only session can close and the isolated server can disappear.
+
+This is the likely explanation for the apparent session timeout. Ctrl+B then
+D returns the client to Termux by detaching; that behavior alone does not
+show that the server was killed. Future test fixtures must use a long-lived
+foreground process such as `sleep 3600`, and the next test should be run before
+that process expires.
+
+## 7. Required next proof gates
 
 Before changing TKM source, test and record:
 
