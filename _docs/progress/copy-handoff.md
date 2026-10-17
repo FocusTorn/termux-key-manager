@@ -38,11 +38,15 @@ implementation.
   down and to line end, fixture lines 1–2 were visibly highlighted.
 - The isolated root Ctrl+G binding copied exactly TKM_CONTEXT_BEFORE and
   TKM_CONTEXT_START to the Android clipboard through the copy pipe. The
-  selected buffer has no trailing newline. This proves only the root-table
-  test binding, not all three key tables or actual TKM bindings.
+  selected buffer has no trailing newline.
+- A separate isolated Ctrl+G binding in the `copy-mode` table (with
+  `mode-keys emacs`) copied the same two lines to Android clipboard, left the
+  matching tmux paste buffer, and exited copy mode (`PANE_IN_MODE=0`). The
+  clipboard output had no trailing newline after `TKM_CONTEXT_START`.
 
-These were test bindings and manually selected ranges, not a completed TKM
-implementation or proof across all three key tables.
+These are test bindings and manually selected ranges, not a completed TKM
+implementation. Root and `copy-mode` have passed; `copy-mode-vi` and actual
+TKM binding integration remain untested.
 
 ## Most recent correction
 
@@ -73,20 +77,24 @@ was 36 bytes with no trailing newline, matching the clipboard output. The
 cause of the initial empty read remains unknown; the end-to-end root binding
 is now **PASS**. The user confirmed seeing `TKM-PROOF:proof` in the attached
 Test Session and pressing Ctrl+G there, resolving the earlier ambiguity about
-where the interactive trial occurred. This does not prove the other key tables
-or TKM bindings.
+where the interactive trial occurred. The later `copy-mode` trial also passed;
+`copy-mode-vi` and TKM bindings remain untested.
 
 ## Immediate next action
 
-Continue at Roadmap Gate 3: establish the action's behavior independently
-from the `root`, `copy-mode`, and `copy-mode-vi` key tables.
+Continue at Roadmap Gate 3 with `copy-mode-vi`. The existing isolated server
+was started with a `sleep 3600` fixture and the config loaded Ctrl+G bindings
+into both copy-mode tables. The last trial set `mode-keys emacs`, so it
+exercised only `copy-mode`.
 
-Use the isolated fixture and verify the selection, tmux buffer, clipboard
-contents, and mode exit behavior for each context. Do not assume that the
-dispatch or cancellation sequence proven from `root` also works when copy
-mode is already active. Keep the earlier empty clipboard attempt in the log;
-its cause is unknown. Do not change TKM source until the behavior contracts
-are understood and tests are written first.
+Check that session `proof` still exists, then set the window to
+`mode-keys vi`. Reset the Android clipboard, attach, enter copy mode with
+Ctrl+B then `[`, press Ctrl+G, and detach. Verify the tmux buffer, clipboard,
+and `pane_in_mode` state. Reset the clipboard before attaching and manually
+type `termux-clipboard-get | cat -vet` after detaching so copying diagnostics
+does not overwrite the result. Keep the earlier inconclusive clipboard check
+in the log. Do not change TKM source until behavior contracts are understood
+and tests are written first.
 
 ## Constraints
 

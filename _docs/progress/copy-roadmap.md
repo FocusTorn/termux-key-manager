@@ -41,18 +41,22 @@ is allowed.
   highlighted fixture lines 1–2 after moving down and to line end.
 - [x] The isolated root Ctrl+G binding copied exactly the two intended
   fixture lines to the Android clipboard through the clipboard pipe.
-- [x] The user confirmed the successful trial was interactive: the
+- [x] In the `copy-mode` table with `mode-keys emacs`, an isolated Ctrl+G
+  binding copied exactly the first two fixture lines to Android clipboard,
+  populated the tmux paste buffer, and exited copy mode.
+- [x] The user confirmed the successful root trial was interactive: the
   `TKM-PROOF:proof` status bar was visible and Ctrl+G was pressed inside the
   attached Test Session.
 
-These last three checks used a test binding, not TKM's actual configured
-macros. They prove individual tmux operations only.
+The root and `copy-mode` checks used isolated test bindings, not TKM's actual
+configured macros. They prove individual tmux operations only.
 
 ### Open work
 
 - [x] Prove the root binding's selection anchor and visible range.
 - [x] Prove the isolated root binding's selection-to-clipboard path end-to-end.
-- [ ] Prove the equivalent action behavior in copy-mode and copy-mode-vi.
+- [x] Prove the isolated action behavior in the `copy-mode` table.
+- [ ] Prove the equivalent action behavior in the `copy-mode-vi` table.
 - [ ] Define and test semantic subset discovery and prompt exclusion.
 - [ ] Write behavior tests before changing implementation.
 - [ ] Implement the central native copy executor and the three callers.
@@ -103,15 +107,19 @@ copies exactly that range.
 
 ### Gate 3 — Establish the three execution contexts
 
+**Status: in progress — root and `copy-mode` test bindings pass;
+`copy-mode-vi` remains untested.**
+
 Run the action and verify its state changes independently from:
 
-1. root
-2. copy-mode
-3. copy-mode-vi
+1. [x] root — isolated root-table binding passed (Gate 2).
+2. [x] `copy-mode` — isolated binding passed with `mode-keys emacs`.
+3. [ ] `copy-mode-vi` — not yet exercised with vi mode active.
 
 Do not assume an entry or cancellation sequence that works from root works
 when copy mode is already active. Keep the executor mechanics shared; use
-context-specific dispatch only where runtime evidence requires it.
+context-specific dispatch only where runtime evidence requires it. These
+trials are test bindings, not TKM's production bindings.
 
 **Exit condition:** the action's expected selection and exit behavior is
 proven in all three contexts, without state leakage.

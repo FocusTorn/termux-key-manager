@@ -17,13 +17,14 @@ from the Termux environment. Source-level analysis is recorded in
 | Copy the available pane history | **PASS** | Clipboard contained all 30 test markers, first through last |
 | Copy only the visible viewport | **PASS** | Clipboard matched visible markers 24 through 30 |
 | Copy an explicitly selected line range | **PASS** | Clipboard contained exactly the three selected lines |
-| tmux copy-mode pipe to Termux clipboard | **PASS** | The pipe worked for manually selected ranges; the full root-binding path remains unverified |
+| tmux copy-mode pipe to Termux clipboard | **PASS** | Manually selected ranges and isolated root/copy-mode test bindings transferred text through the pipe |
 | Isolated root-table key recognition | **PASS** | Attached client Ctrl+G displayed `TKM_ROOT_KEY_OK` |
 | Root binding enters copy mode | **PASS** | Copy-mode position indicator appeared after Ctrl+G |
 | Chained `copy-mode` + `history-top` binding | **PASS** | Cursor observed at `1,1` while copy mode remained active |
 | Root binding selection anchor and visible extension | **PASS** | Moving down to line end after beginning selection visibly highlighted fixture lines 1–2 |
 | End-to-end root binding with selection and clipboard | **PASS** | The isolated root Ctrl+G binding copied exactly the first two fixture lines to Android clipboard on a subsequent attach/copy attempt |
-| Invocation from `copy-mode` and `copy-mode-vi` | **NOT TESTED** | No actual TKM bindings were exercised in either table |
+| Invocation from the `copy-mode` table | **PASS** | The isolated Ctrl+G test binding copied the intended two fixture lines to Android clipboard and exited copy mode |
+| Invocation from the `copy-mode-vi` table | **NOT TESTED** | The vi table binding is installed in the fixture config but has not been exercised with vi mode active |
 | Exclude a real interactive shell prompt | **NOT TESTED** | The subset test used a printed marker, not a live shell prompt |
 | Locate pytest or `Patch Failed` semantic boundaries | **NOT TESTED** | The test selected a known line range rather than discovering markers |
 | Missing-marker and failure behavior | **NOT TESTED** | No negative semantic-selector test was run |
@@ -135,8 +136,10 @@ selection limitation.
    selected ranges to the Termux clipboard.
 4. A shared selection-and-clipboard mechanism for multiple copy actions is
    technically plausible and worth continuing to test.
-5. These tests do not yet establish how TKM should enter, operate within, or
-   exit each of its three binding contexts.
+5. Isolated root- and `copy-mode`-table test bindings have copied a known
+   range to Android clipboard; the `copy-mode` test also exited copy mode.
+   The `copy-mode-vi` context and actual TKM binding integration remain
+   untested.
 6. These tests do not yet prove automatic pytest/`Patch Failed` boundary
    discovery or reliable exclusion of a real terminal prompt.
 7. These tests do not compare the external Termux clipboard pipe with tmux's
@@ -227,8 +230,8 @@ failure.
    selected the expected range and transferred it to Android clipboard through
    `copy-pipe-and-cancel 'termux-clipboard-set'`. The cause of the earlier
    empty clipboard read remains undetermined. This does not prove behavior
-   from `copy-mode` or `copy-mode-vi`, actual TKM bindings, or semantic
-   boundary discovery.
+   from `copy-mode-vi`, actual TKM bindings, or semantic boundary
+   discovery.
 
 ### Test-fixture lifetime finding
 
@@ -245,12 +248,48 @@ show that the server was killed. Future test fixtures must use a long-lived
 foreground process such as `sleep 3600`, and the next test should be run before
 that process expires.
 
-## 7. Required next proof gates
+## 7. Copy-mode table binding trial (2026-10-17)
+
+**Setup:** The isolated `proof` session was recreated with a long-lived
+`sleep 3600` foreground process. A config file loaded Ctrl+G test bindings
+into both `copy-mode` and `copy-mode-vi`; the window was explicitly set to
+`mode-keys emacs`, so this trial exercised only the `copy-mode` table.
+These are isolated test bindings, not TKM's configured macros.
+
+**PASS — selection, tmux buffer, clipboard, and mode exit.** After resetting
+the Android clipboard, the client attached to `proof`; Ctrl+B then `[` entered
+copy mode, and Ctrl+G ran the `copy-mode` binding. The selected fixture range
+was exactly:
+
+```text
+TKM_CONTEXT_BEFORE
+TKM_CONTEXT_START
+```
+
+The tmux paste buffer contained those two lines. The mode-state check returned
+`PANE_IN_MODE=0`, showing that `copy-pipe-and-cancel` exited copy mode. The
+subsequent, separately typed `termux-clipboard-get | cat -vet` check returned
+the same two lines with no trailing newline after `TKM_CONTEXT_START`; the
+Termux prompt appeared immediately after the marker. This is the successful
+Android clipboard read, not the earlier diagnostic text.
+
+An earlier diagnostic block had overwritten the clipboard with its own
+shell-command text, so that read was inconclusive. The clipboard was reset,
+the copy action was repeated, and the result was retrieved by manually typing
+the getter command. That subsequent check is the passing evidence.
+
+**Scope:** This proves the isolated `copy-mode`-table binding in emacs mode.
+The similarly installed `copy-mode-vi` binding was not exercised because the
+window remained in emacs mode. Actual TKM bindings and semantic boundary
+discovery remain untested.
+
+## 8. Required next proof gates
 
 Before changing TKM source, test and record:
 
-1. **Execution contexts:** invoke the action from actual bindings in
-   `root`, `copy-mode`, and `copy-mode-vi`.
+1. **Execution contexts:** root and `copy-mode` isolated test bindings now
+   pass. Exercise `copy-mode-vi` next, then verify the actual TKM binding
+   integration when implementation begins.
 2. **Cursor and prompt boundaries:** determine how the selection endpoint
    relates to pane output, the live shell prompt, and the application cursor.
 3. **Semantic selection:** identify the required pytest result/progress start
