@@ -130,16 +130,21 @@ required contexts, without state leakage.
 
 ### Gate 4 — Prove pytest subset and prompt exclusion
 
-**Status: blocked on the active zsh prompt integration.** Both sides of the
-marker test are now distinguished: direct OSC 133 A/C emission is correctly
-flagged by tmux 3.8, but the live prompt capture showed `X ~ ❯ tkm`, not a
-`P`-flagged prompt. The `Patch Failed` range remains deferred.
+**Status: theme integration committed; Termux runtime proof pending.** The
+active shell is Zsh 5.9.2 with `ZSH_THEME=focused2-termux`, using the custom
+Oh My Zsh theme at
+`FocusTorn/zsh-customized-overlay/zsh/custom/themes/focused2-termux.zsh-theme`.
+The source initially had no OSC 133 markers. An integration change is now
+committed at
+https://github.com/FocusTorn/zsh-customized-overlay/commit/9a61d8ce444132b55435ddc3080ee964e80e476c
+but has not yet been loaded and tested in Termux. The `Patch Failed` range
+remains deferred.
 
 **Preferred boundary mechanism: OSC 133.** `capture-pane -F` exposes tmux
 line flags (`P` prompt and `O` output); inspect these flags rather than
-matching visible prompt text. In the live capture, `X` means extended cells
-and `W` marks wrapping; `WX` is not a prompt flag. See the tmux 3.8
-implementation diff:
+matching visible prompt text. The earlier live capture had `X ~ ❯ tkm` and
+no `P`. In tmux 3.8, `X` means extended cells and `W` marks wrapping;
+`WX` is not a prompt flag. See:
 https://fossies.org/diffs/tmux/3.7c_vs_3.8/cmd-capture-pane.c-diff.html
 
 **Pytest subset contract**
@@ -159,30 +164,37 @@ https://fossies.org/diffs/tmux/3.7c_vs_3.8/cmd-capture-pane.c-diff.html
    `P TKM_OSC133_A_PROBE`, `- TKM_OSC133_B_PROBE`, and
    `O TKM_OSC133_C_PROBE`.
 
-2. [x] Capture the ordinary shell prompt with `capture-pane -pF`. The
-   sampled prompt row was `X ~ ❯ tkm`, with no `P` flag. The current shell
-   therefore does not demonstrate automatic prompt marking.
+2. [x] Identify the live prompt source and marker-free state. Runtime
+   diagnostics reported Zsh 5.9.2 and `ZSH_THEME=focused2-termux`; neither
+   `starship`, `oh-my-posh`, nor `p10k` was installed. The theme had no
+   OSC 133 markers.
 
-3. Identify the active zsh prompt framework and its configured hooks before
-   changing anything. Use this read-only diagnostic:
+3. [x] Commit OSC 133 A/B/C/D integration to the theme source. The update
+   preserves the existing prompt under zero-width markers, emits C in
+   `preexec`, and emits D with the command status in a first-position
+   `precmd` hook.
 
-   ```zsh
-   printf 'ZSH_VERSION=%s\nZSH_THEME=%s\n' "${ZSH_VERSION:-<unset>}" "${ZSH_THEME:-<unset>}"
-   typeset -p PROMPT RPROMPT precmd_functions preexec_functions 2>/dev/null
-   for cmd in starship oh-my-posh p10k; do whence -va "$cmd" 2>/dev/null; done
+4. [ ] Sync/load the committed theme in Termux and run:
+
+   ```sh
+   printf 'TKM_OSC133_OUTPUT_PROBE\\n'
+   tmux capture-pane -pF -S - | tail -n 40 | sed -n 'l'
    ```
 
-   Do not infer the framework from the glyphs alone or overwrite prompt hooks.
+   Expected: the current prompt's top rule row is flagged `P`, and the
+   probe output row is flagged `O`. Keep raw output if either marker is
+   missing; don't assume a source change proves runtime behavior.
 
-4. Once the real prompt is reliably marked, cover repeated/missing progress
-   markers, missing prompt markers, blank lines, multiline output, and safe
-   failure.
-5. Add selector tests to the existing `_test/test_pytest_clipboard.py` and
-   use the normal project runner; do not create an isolated pytest harness.
+5. [ ] With both markers confirmed in the live shell, cover repeated/missing
+   progress markers, missing prompt markers, blank lines, multiline output,
+   and safe failure.
+6. [ ] Add selector behavior tests to the existing
+   `_test/test_pytest_clipboard.py` and use the normal project runner; do
+   not create an isolated pytest harness.
 
-**Exit condition:** explicit markers and the actual interactive prompt are
-both understood, and positive/negative cases prove the range contract. No
-TKM implementation change until the behavior contract and tests are clear.
+**Exit condition:** live prompt and output markers are present, and positive
+and negative cases prove the range contract. Do not change TKM's copy
+implementation until the behavior contract and tests are clear.
 
 ### Gate 5 — Write behavior tests and implement
 

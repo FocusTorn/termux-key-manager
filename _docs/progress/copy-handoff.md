@@ -85,32 +85,36 @@ where the interactive trial occurred. The later `copy-mode` trial also passed;
 
 ## Immediate next action
 
-The controlled OSC 133 probe passes on tmux 3.8: A was flagged `P`, B was
-unflagged, and C was flagged `O`. But the user's live capture showed the
-actual prompt row as `X ~ ❯ tkm`, not `P`. A captured wrapped command row
-showed `WX`. In tmux 3.8, `W` means wrapped and `X` means extended cells;
-neither substitutes for the prompt flag. Source:
-https://fossies.org/diffs/tmux/3.7c_vs_3.8/cmd-capture-pane.c-diff.html
+The active prompt configuration is now identified: Zsh 5.9.2,
+`ZSH_THEME=focused2-termux`, with Oh My Zsh hooks and no Starship,
+Oh My Posh, or Powerlevel10k. The live theme source was
+`FocusTorn/zsh-customized-overlay/zsh/custom/themes/focused2-termux.zsh-theme`;
+it built the multiline prompt but emitted no OSC 133 markers.
 
-**Next, identify the active zsh prompt framework and hooks without modifying
-configuration.** Run:
+A theme integration patch is committed at
+https://github.com/FocusTorn/zsh-customized-overlay/commit/9a61d8ce444132b55435ddc3080ee964e80e476c:
+- OSC 133 A/B around the existing prompt string (zero-width wrappers);
+- C from `preexec` before command output;
+- D plus exit status from a first-position `precmd` hook.
 
-```zsh
-printf 'ZSH_VERSION=%s\nZSH_THEME=%s\n' "${ZSH_VERSION:-<unset>}" "${ZSH_THEME:-<unset>}"
-typeset -p PROMPT RPROMPT precmd_functions preexec_functions 2>/dev/null
-for cmd in starship oh-my-posh p10k; do whence -va "$cmd" 2>/dev/null; done
+This source change has not yet been runtime-verified. Sync/load the updated
+theme in Termux, then run:
+
+```sh
+printf 'TKM_OSC133_OUTPUT_PROBE\\n'
+tmux capture-pane -pF -S - | tail -n 40 | sed -n 'l'
 ```
 
-Use its output to choose the supported OSC 133 integration. Do not infer the
-framework from prompt glyphs alone, change the shell prompt, or modify TKM
-source yet.
+Expected: the current prompt's top rule row carries `P`, and
+`TKM_OSC133_OUTPUT_PROBE` is on an `O`-flagged row. If either is missing,
+paste the raw output and don't proceed to the pytest selector implementation.
 
 The pytest subset contract remains: start at the latest valid progress line
 ending in `[100%]`, include that line, and stop immediately before the final
 line flagged `P`. Preserve intervening blank/multiline output and fail closed
 if either boundary is missing. The `Patch Failed` selector remains deferred.
 Use existing `_test/test_pytest_clipboard.py` with the normal project runner
-once prompt marking is settled.
+once live markers are confirmed.
 
 ## Constraints
 

@@ -26,7 +26,8 @@ from the Termux environment. Source-level analysis is recorded in
 | Invocation from the `copy-mode` table | **PASS** | The isolated Ctrl+G test binding copied the intended two fixture lines to Android clipboard and exited copy mode |
 | Invocation from the `copy-mode-vi` table | **NOT TESTED** | Explicitly excluded from the current acceptance scope by the 2026-10-17 scope decision; no vi-mode trial will be run |
 | Exclude a real interactive shell prompt | **NOT TESTED** | The subset test used a printed marker, not a live shell prompt |
-| Automatic prompt flag from the active shell | **FAIL (sampled prompt unmarked)** | Live capture row `X ~ ❯ tkm` has no `P`; direct marker handling separately passes |
+| Automatic prompt flag before theme update | **FAIL (observed)** | Live capture row `X ~ ❯ tkm` had no `P`; see Sections 13–14 |
+| Updated `focused2-termux` OSC 133 integration | **NOT TESTED** | Theme patch committed as `9a61d8c`; the updated prompt and command flags have not yet been observed in Termux |
 | Direct OSC 133 marker handling in tmux 3.8 | **PASS** | Direct A/B/C sentinels appeared with prefixes `P`, `-`, and `O` |
 | Interpret tmux 3.8 `W`/`X` flags | **PASS** | `X` appeared on Unicode prompt rows and `WX` on a wrapped line; tmux 3.8 maps `W` to wrapped and `X` to extended cells |
 | Locate pytest or `Patch Failed` semantic boundaries | **NOT TESTED** | The test selected a known line range rather than discovering markers |
@@ -452,3 +453,66 @@ Use these results to identify the actual prompt renderer and its hook setup.
 Do not infer a framework from the glyphs alone, replace the current prompt, or
 install/enable OSC 133 hooks speculatively. The `Patch Failed` selector remains
 deferred.
+
+
+## 14. Active prompt theme identified and OSC 133 integration committed (2026-10-17)
+
+The user reported these read-only runtime diagnostics:
+
+```text
+ZSH_VERSION=5.9.2
+ZSH_THEME=focused2-termux
+PROMPT: assembled from FOCUSED_PROMPT_RULE, FOCUSED_PROMPT_INFO,
+        FOCUSED_PROMPT_DIR, and the prompt glyph
+precmd_functions:
+  _omz_async_request
+  omz_termsupport_precmd
+  omz_termsupport_cwd
+  precmd_update_git_vars
+  _zsh_autosuggest_start
+  _zsh_highlight_main__precmd_hook
+  focused2_prompt_refresh
+preexec_functions:
+  omz_termsupport_preexec
+  preexec_update_git_vars
+  _zsh_highlight_preexec_hook
+starship not found
+oh-my-posh not found
+p10k not found
+```
+
+**Source finding:** the active source is
+`FocusTorn/zsh-customized-overlay/zsh/custom/themes/focused2-termux.zsh-theme`.
+Before the update it built the multiline prompt from the three variables
+listed above; it did not emit OSC 133 markers. This explains the live
+capture's missing `P` prompt flag without contradicting the controlled tmux
+marker test.
+
+**Theme integration committed:**
+https://github.com/FocusTorn/zsh-customized-overlay/commit/9a61d8ce444132b55435ddc3080ee964e80e476c
+
+The change:
+- wraps the existing `PROMPT` with zero-width OSC 133 A/B markers,
+  preserving the visible multiline layout;
+- emits OSC 133 C from the `preexec` hook before command output;
+- emits OSC 133 D with the last command's status from a `precmd` hook;
+- puts that `precmd` hook first so other hooks cannot change the captured
+  status first, and removes/re-adds hooks to avoid duplicate registration.
+
+**Classification: COMMITTED, RUNTIME NOT TESTED.** Remote source checks
+confirmed the prompt wrapper and C/D hook code are present. No zsh runtime or
+Termux test has yet verified the modified prompt. The user must sync/load the
+new overlay theme before testing it.
+
+**Runtime proof after loading the update:**
+
+```sh
+printf 'TKM_OSC133_OUTPUT_PROBE\\n'
+tmux capture-pane -pF -S - | tail -n 40 | sed -n 'l'
+```
+
+Expected evidence: the current prompt's top rule row carries a `P` flag, and
+`TKM_OSC133_OUTPUT_PROBE` appears on an `O`-flagged row. A wrapped row may
+also have `W`; that is independent of the prompt/output flags. If either
+expected marker is missing, preserve the complete capture and diagnose before
+implementing the TKM subset selector.
