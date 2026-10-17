@@ -510,7 +510,8 @@ URL. These are the canonical Git operations for this workflow.
 the shell:
 
 ```sh
-cd "$HOME/projects/zsh-customized-overlay" && g l
+cd "$HOME/projects/_universal-termux-resources" && g l || exit
+cd "$HOME/projects/zsh-customized-overlay" && g l || exit
 exec zsh -l
 ```
 

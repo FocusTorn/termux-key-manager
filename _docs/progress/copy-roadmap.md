@@ -178,7 +178,8 @@ https://fossies.org/diffs/tmux/3.7c_vs_3.8/cmd-capture-pane.c-diff.html
    G suite, then reload the login shell:
 
    ```sh
-   cd "$HOME/projects/zsh-customized-overlay" && g l
+   cd "$HOME/projects/_universal-termux-resources" && g l || exit
+   cd "$HOME/projects/zsh-customized-overlay" && g l || exit
    exec zsh -l
    ```
 

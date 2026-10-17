@@ -101,7 +101,8 @@ This source change has not yet been runtime-verified. Sync it with the UTR G
 suite and reload zsh:
 
 ```sh
-cd "$HOME/projects/zsh-customized-overlay" && g l
+cd "$HOME/projects/_universal-termux-resources" && g l || exit
+cd "$HOME/projects/zsh-customized-overlay" && g l || exit
 exec zsh -l
 ```
 
