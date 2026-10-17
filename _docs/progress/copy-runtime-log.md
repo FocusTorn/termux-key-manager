@@ -26,7 +26,8 @@ from the Termux environment. Source-level analysis is recorded in
 | Invocation from the `copy-mode` table | **PASS** | The isolated Ctrl+G test binding copied the intended two fixture lines to Android clipboard and exited copy mode |
 | Invocation from the `copy-mode-vi` table | **NOT TESTED** | Explicitly excluded from the current acceptance scope by the 2026-10-17 scope decision; no vi-mode trial will be run |
 | Exclude a real interactive shell prompt | **NOT TESTED** | The subset test used a printed marker, not a live shell prompt |
-| Automatic prompt flag from the active shell | **FAIL** | The user-provided `capture-pane -pF` probe returned no `P`-marked lines; raw prefixes and controlled-marker handling remain unverified |
+| Automatic prompt flag from the active shell | **FAIL (not observed)** | The live full-history probe had no `P` lines; direct marker handling passes, but the ordinary prompt is still unverified |
+| Direct OSC 133 marker handling in tmux 3.8 | **PASS** | Direct A/B/C sentinels appeared with prefixes `P`, `-`, and `O` |
 | Locate pytest or `Patch Failed` semantic boundaries | **NOT TESTED** | The test selected a known line range rather than discovering markers |
 | Missing-marker and failure behavior | **NOT TESTED** | No negative semantic-selector test was run |
 | Native tmux terminal clipboard path without an external command | **NOT TESTED** | The passing clipboard tests used `termux-clipboard-set` as the pipe command |
@@ -368,3 +369,42 @@ contains only a few test lines, so print the entire bounded capture using
 `sed -n 'l'`. First verify the A, B, and C sentinel text is present; only
 then interpret the line flags. Keep controlled-marker handling distinct from
 testing whether the user's ordinary zsh prompt emits OSC 133.
+
+
+## 12. Direct OSC 133 marker handling confirmed (2026-10-17)
+
+**Setup:** The user ran the direct-emission probe in a disposable pane on
+`tmux 3.8`. The probe printed the OSC 133 A, B, C, and D sequences directly
+from its child command, avoiding interactive `send-keys` parsing. The full
+capture was inspected without `tail`.
+
+**Observed output:**
+
+```text
+P TKM_OSC133_A_PROBE$
+- TKM_OSC133_B_PROBE$
+O TKM_OSC133_C_PROBE$
+```
+
+**Result: PASS for controlled marker handling.** tmux recognized the direct
+OSC 133 sequence: the A sentinel line was flagged `P`, the B sentinel line
+had no flag (`-`), and the C sentinel line was flagged `O`. The earlier
+truncated capture was correctly inconclusive; this output supersedes that
+uncertainty about tmux handling explicit marker sequences.
+
+**Still unresolved:** the ordinary interactive zsh prompt has not been
+observed with a `P` flag. The previous full-history grep found no matching
+lines, so the next test must inspect raw flags around the live prompt. That
+result will determine whether the active shell or its prompt framework needs
+OSC 133 integration. Do not change production shell hooks or TKM source yet.
+
+Inspect recent rows of the live pane:
+
+```sh
+tmux capture-pane -pF -S - | tail -n 40 | sed -n 'l'
+```
+
+The expected decision point is the actual prompt row's prefix, not merely
+whether unrelated controlled markers can be flagged. If no live prompt row is
+marked `P`, identify the active prompt framework and supported integration
+before changing configuration. The `Patch Failed` selector remains deferred.

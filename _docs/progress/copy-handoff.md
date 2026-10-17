@@ -85,39 +85,39 @@ where the interactive trial occurred. The later `copy-mode` trial also passed;
 
 ## Immediate next action
 
-Continue with OSC 133; do not switch to visible-prompt matching. The user's
-full-history prompt grep found no `P` lines. The direct-emission test then
-showed only twelve blank rows because the capture was truncated with `tail`;
-that result is inconclusive and does not show whether the sentinel lines were
-present earlier in the capture.
+**Controlled OSC 133 handling now passes on tmux 3.8.** In the direct-emission
+probe, the captured lines were:
 
-Use a disposable pane to emit the sequences directly, bypassing interactive
-`send-keys` parsing:
-
-```sh
-(
-    probe="tkm-osc133-probe-$$"
-    tmux new-session -d -s "$probe" "sh -c 'printf \"\\033]133;A\\007TKM_OSC133_A_PROBE\\n\\033]133;B\\007TKM_OSC133_B_PROBE\\n\\033]133;C\\007TKM_OSC133_C_PROBE\\n\\033]133;D;0\\007\"; sleep 30'" || exit 1
-    trap 'tmux kill-session -t "$probe" 2>/dev/null || true' EXIT
-    sleep 1
-    tmux capture-pane -pF -t "$probe:0.0" -S - | sed -n 'l'
-)
+```text
+P TKM_OSC133_A_PROBE$
+- TKM_OSC133_B_PROBE$
+O TKM_OSC133_C_PROBE$
 ```
 
-First verify `TKM_OSC133_A_PROBE`, `TKM_OSC133_B_PROBE`, and
-`TKM_OSC133_C_PROBE` all appear in the untruncated output. Then inspect the A
-line for `P` and the C line for `O`; B marks the command-start transition. If
-the strings are missing, report the entire raw capture; the controlled test
-still has not run successfully. If they show the expected flags but the regular zsh prompt is
-unmarked, investigate the actual prompt framework's OSC 133 support before
-changing hooks. The `Patch Failed` selector remains deferred. Once prompt
-flags work, return to the pytest range contract and tests in the existing
-`_test/test_pytest_clipboard.py`, using the normal project runner.
+This confirms tmux assigns `P` to the line after an explicit OSC 133 A marker
+and `O` to the line after an explicit C marker. The B sentinel line was
+unflagged. The earlier probe that used `tail -n 12` was inconclusive because
+it showed only blank rows; the untruncated test above supersedes that attempt.
 
-**Scope decision (2026-10-17):** do not run a `copy-mode-vi` trial. Vi-mode
-proof is intentionally excluded from this refactor's acceptance criteria. The
-required isolated contexts are root and emacs-style `copy-mode`; no claim is
-made about invocation from the vi key table.
+**Remaining blocker:** the normal interactive zsh prompt has not appeared as
+a `P`-flagged line. The full-history grep found no `P` marks, while the
+controlled test proves tmux can recognize explicit marker output. Inspect the
+raw flags around the actual live prompt:
+
+```sh
+tmux capture-pane -pF -S - | tail -n 40 | sed -n 'l'
+```
+
+If the prompt row is still unmarked, identify the active zsh prompt framework
+and its supported OSC 133 integration before modifying any shell hook. Do not
+switch to visible-prompt text matching and do not modify TKM source yet.
+
+The pytest subset contract remains: start at the latest valid progress line
+ending in `[100%]`, include that line, and stop immediately before the final
+line flagged `P`. Preserve intervening blank/multiline output and fail closed
+if either boundary is missing. The `Patch Failed` selector remains deferred.
+Use the existing `_test/test_pytest_clipboard.py` with the normal project
+runner once prompt marking is settled.
 
 ## Constraints
 

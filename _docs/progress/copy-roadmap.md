@@ -130,11 +130,11 @@ required contexts, without state leakage.
 
 ### Gate 4 — Prove pytest subset and prompt exclusion
 
-**Status: blocked on prompt-marker discovery.** The full-history prompt grep
-returned no `P` lines. The subsequent direct-emission test printed only the
-last twelve blank rows because its capture was piped through `tail`; this is
-inconclusive about the controlled markers. The `Patch Failed` range remains
-deferred.
+**Status: blocked on live prompt marks, not tmux's handling of emitted OSC 133.**
+On tmux 3.8, the direct-emission probe passed: `capture-pane -F` flagged
+the A sentinel `P`, the B sentinel `-`, and the C sentinel `O`. The
+normal shell's full-history probe still found no `P` lines. The `Patch Failed`
+range remains deferred.
 
 **Preferred boundary mechanism: OSC 133.** `capture-pane -F` exposes tmux
 line flags (`P` prompt and `O` output); it is a way to inspect semantic
@@ -153,33 +153,33 @@ markers, not a replacement for them. Do not fall back to visible-prompt text.
 
 **Required proof sequence**
 
-1. Inspect the raw flags from the live shell; the reported sample showed no
-   `P` marks.
-2. Use a disposable pane whose command emits OSC 133 markers directly, rather
-   than typing a nested `printf` through `send-keys`:
+1. Inspect raw flags around the live shell prompt with:
 
    ```sh
-   (
-       probe="tkm-osc133-probe-$$"
-       tmux new-session -d -s "$probe" "sh -c 'printf \"\\033]133;A\\007TKM_OSC133_A_PROBE\\n\\033]133;B\\007TKM_OSC133_B_PROBE\\n\\033]133;C\\007TKM_OSC133_C_PROBE\\n\\033]133;D;0\\007\"; sleep 30'" || exit 1
-       trap 'tmux kill-session -t "$probe" 2>/dev/null || true' EXIT
-       sleep 1
-       tmux capture-pane -pF -t "$probe:0.0" -S - | sed -n 'l'
-   )
+   tmux capture-pane -pF -S - | tail -n 40 | sed -n 'l'
    ```
 
-   Because the capture is now untruncated, first confirm that all three
-   sentinel strings are visible. Then check that the A line is flagged `P`
-   and the C line is flagged `O`; B marks the command-start transition.
-3. If controlled markers get the expected flags but the normal zsh prompt
-   does not, identify the active prompt framework and its supported OSC 133
-   integration before changing shell configuration.
+   The earlier full-history grep found no `P` lines. This raw sample should
+   expose the prefix on the actual prompt row; do not infer the prompt's
+   status from the controlled test.
+
+2. **[x] Verify controlled OSC 133 handling.** The direct-emission disposable
+   pane displayed all sentinels, with `P TKM_OSC133_A_PROBE`,
+   `- TKM_OSC133_B_PROBE`, and `O TKM_OSC133_C_PROBE`. This proves that
+   tmux 3.8 recognizes explicit A/C markers. The earlier truncated output is
+   retained as historical evidence in the runtime log, not treated as a
+   failure.
+
+3. If the normal zsh prompt still lacks a `P` flag, identify the active shell
+   prompt framework and its supported OSC 133 integration before changing
+   configuration. Do not guess at or overwrite prompt hooks.
+
 4. Once the real prompt is marked, cover repeated/missing progress markers,
-   missing prompt markers, blank lines, multiline output and safe failure.
+   missing prompt markers, blank lines, multiline output, and safe failure.
 5. Add selector tests to the existing `_test/test_pytest_clipboard.py` and
    use the normal project runner; do not create an isolated pytest harness.
 
-**Exit condition:** direct marker emission is visibly captured with expected
+**Exit condition:** direct marker emission is captured with the expected
 flags, the normal prompt is reliably marked, and positive/negative cases prove
 the range contract. No TKM implementation change until the behavior contract
 and tests are clear.
