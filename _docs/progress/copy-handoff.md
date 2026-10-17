@@ -85,39 +85,32 @@ where the interactive trial occurred. The later `copy-mode` trial also passed;
 
 ## Immediate next action
 
-**Controlled OSC 133 handling now passes on tmux 3.8.** In the direct-emission
-probe, the captured lines were:
+The controlled OSC 133 probe passes on tmux 3.8: A was flagged `P`, B was
+unflagged, and C was flagged `O`. But the user's live capture showed the
+actual prompt row as `X ~ ❯ tkm`, not `P`. A captured wrapped command row
+showed `WX`. In tmux 3.8, `W` means wrapped and `X` means extended cells;
+neither substitutes for the prompt flag. Source:
+https://fossies.org/diffs/tmux/3.7c_vs_3.8/cmd-capture-pane.c-diff.html
 
-```text
-P TKM_OSC133_A_PROBE$
-- TKM_OSC133_B_PROBE$
-O TKM_OSC133_C_PROBE$
+**Next, identify the active zsh prompt framework and hooks without modifying
+configuration.** Run:
+
+```zsh
+printf 'ZSH_VERSION=%s\nZSH_THEME=%s\n' "${ZSH_VERSION:-<unset>}" "${ZSH_THEME:-<unset>}"
+typeset -p PROMPT RPROMPT precmd_functions preexec_functions 2>/dev/null
+for cmd in starship oh-my-posh p10k; do whence -va "$cmd" 2>/dev/null; done
 ```
 
-This confirms tmux assigns `P` to the line after an explicit OSC 133 A marker
-and `O` to the line after an explicit C marker. The B sentinel line was
-unflagged. The earlier probe that used `tail -n 12` was inconclusive because
-it showed only blank rows; the untruncated test above supersedes that attempt.
-
-**Remaining blocker:** the normal interactive zsh prompt has not appeared as
-a `P`-flagged line. The full-history grep found no `P` marks, while the
-controlled test proves tmux can recognize explicit marker output. Inspect the
-raw flags around the actual live prompt:
-
-```sh
-tmux capture-pane -pF -S - | tail -n 40 | sed -n 'l'
-```
-
-If the prompt row is still unmarked, identify the active zsh prompt framework
-and its supported OSC 133 integration before modifying any shell hook. Do not
-switch to visible-prompt text matching and do not modify TKM source yet.
+Use its output to choose the supported OSC 133 integration. Do not infer the
+framework from prompt glyphs alone, change the shell prompt, or modify TKM
+source yet.
 
 The pytest subset contract remains: start at the latest valid progress line
 ending in `[100%]`, include that line, and stop immediately before the final
 line flagged `P`. Preserve intervening blank/multiline output and fail closed
 if either boundary is missing. The `Patch Failed` selector remains deferred.
-Use the existing `_test/test_pytest_clipboard.py` with the normal project
-runner once prompt marking is settled.
+Use existing `_test/test_pytest_clipboard.py` with the normal project runner
+once prompt marking is settled.
 
 ## Constraints
 

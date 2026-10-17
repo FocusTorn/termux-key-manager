@@ -26,8 +26,9 @@ from the Termux environment. Source-level analysis is recorded in
 | Invocation from the `copy-mode` table | **PASS** | The isolated Ctrl+G test binding copied the intended two fixture lines to Android clipboard and exited copy mode |
 | Invocation from the `copy-mode-vi` table | **NOT TESTED** | Explicitly excluded from the current acceptance scope by the 2026-10-17 scope decision; no vi-mode trial will be run |
 | Exclude a real interactive shell prompt | **NOT TESTED** | The subset test used a printed marker, not a live shell prompt |
-| Automatic prompt flag from the active shell | **FAIL (not observed)** | The live full-history probe had no `P` lines; direct marker handling passes, but the ordinary prompt is still unverified |
+| Automatic prompt flag from the active shell | **FAIL (sampled prompt unmarked)** | Live capture row `X ~ ❯ tkm` has no `P`; direct marker handling separately passes |
 | Direct OSC 133 marker handling in tmux 3.8 | **PASS** | Direct A/B/C sentinels appeared with prefixes `P`, `-`, and `O` |
+| Interpret tmux 3.8 `W`/`X` flags | **PASS** | `X` appeared on Unicode prompt rows and `WX` on a wrapped line; tmux 3.8 maps `W` to wrapped and `X` to extended cells |
 | Locate pytest or `Patch Failed` semantic boundaries | **NOT TESTED** | The test selected a known line range rather than discovering markers |
 | Missing-marker and failure behavior | **NOT TESTED** | No negative semantic-selector test was run |
 | Native tmux terminal clipboard path without an external command | **NOT TESTED** | The passing clipboard tests used `termux-clipboard-set` as the pipe command |
@@ -408,3 +409,46 @@ The expected decision point is the actual prompt row's prefix, not merely
 whether unrelated controlled markers can be flagged. If no live prompt row is
 marked `P`, identify the active prompt framework and supported integration
 before changing configuration. The `Patch Failed` selector remains deferred.
+
+
+## 13. Live shell prompt capture (2026-10-17)
+
+**Command run by the user:**
+
+```sh
+tmux capture-pane -pF -S - | tail -n 40 | sed -n 'l'
+```
+
+**Relevant output:**
+
+```text
+X ~ \342\235\257 tkm$
+WX \342\235\257 tmux capture-pane -pF -S - | tail -n 40 | s$
+- ed -n 'l'$
+```
+
+The live prompt row appears with `X`, not `P`. The command line was wrapped,
+so its first row has `WX`; neither prefix contains the prompt flag. The tmux
+3.8 source shows `W` represents a wrapped line and `X` represents a line
+containing extended cells:
+https://fossies.org/diffs/tmux/3.7c_vs_3.8/cmd-capture-pane.c-diff.html
+
+**Result: FAIL for automatic prompt marking in this live sample.** This does
+not contradict the passing direct-emission test: tmux recognized explicit
+OSC 133 A/C markers, but the interactive shell prompt did not receive a `P`
+flag in the captured state. No TKM source or production prompt hooks have
+been changed.
+
+**Next diagnostic — identify the active zsh prompt framework without making
+configuration changes:**
+
+```zsh
+printf 'ZSH_VERSION=%s\nZSH_THEME=%s\n' "${ZSH_VERSION:-<unset>}" "${ZSH_THEME:-<unset>}"
+typeset -p PROMPT RPROMPT precmd_functions preexec_functions 2>/dev/null
+for cmd in starship oh-my-posh p10k; do whence -va "$cmd" 2>/dev/null; done
+```
+
+Use these results to identify the actual prompt renderer and its hook setup.
+Do not infer a framework from the glyphs alone, replace the current prompt, or
+install/enable OSC 133 hooks speculatively. The `Patch Failed` selector remains
+deferred.

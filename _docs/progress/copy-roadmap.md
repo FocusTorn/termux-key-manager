@@ -130,15 +130,17 @@ required contexts, without state leakage.
 
 ### Gate 4 — Prove pytest subset and prompt exclusion
 
-**Status: blocked on live prompt marks, not tmux's handling of emitted OSC 133.**
-On tmux 3.8, the direct-emission probe passed: `capture-pane -F` flagged
-the A sentinel `P`, the B sentinel `-`, and the C sentinel `O`. The
-normal shell's full-history probe still found no `P` lines. The `Patch Failed`
-range remains deferred.
+**Status: blocked on the active zsh prompt integration.** Both sides of the
+marker test are now distinguished: direct OSC 133 A/C emission is correctly
+flagged by tmux 3.8, but the live prompt capture showed `X ~ ❯ tkm`, not a
+`P`-flagged prompt. The `Patch Failed` range remains deferred.
 
 **Preferred boundary mechanism: OSC 133.** `capture-pane -F` exposes tmux
-line flags (`P` prompt and `O` output); it is a way to inspect semantic
-markers, not a replacement for them. Do not fall back to visible-prompt text.
+line flags (`P` prompt and `O` output); inspect these flags rather than
+matching visible prompt text. In the live capture, `X` means extended cells
+and `W` marks wrapping; `WX` is not a prompt flag. See the tmux 3.8
+implementation diff:
+https://fossies.org/diffs/tmux/3.7c_vs_3.8/cmd-capture-pane.c-diff.html
 
 **Pytest subset contract**
 
@@ -153,36 +155,34 @@ markers, not a replacement for them. Do not fall back to visible-prompt text.
 
 **Required proof sequence**
 
-1. Inspect raw flags around the live shell prompt with:
+1. [x] Verify controlled OSC 133 handling. The disposable pane showed
+   `P TKM_OSC133_A_PROBE`, `- TKM_OSC133_B_PROBE`, and
+   `O TKM_OSC133_C_PROBE`.
 
-   ```sh
-   tmux capture-pane -pF -S - | tail -n 40 | sed -n 'l'
+2. [x] Capture the ordinary shell prompt with `capture-pane -pF`. The
+   sampled prompt row was `X ~ ❯ tkm`, with no `P` flag. The current shell
+   therefore does not demonstrate automatic prompt marking.
+
+3. Identify the active zsh prompt framework and its configured hooks before
+   changing anything. Use this read-only diagnostic:
+
+   ```zsh
+   printf 'ZSH_VERSION=%s\nZSH_THEME=%s\n' "${ZSH_VERSION:-<unset>}" "${ZSH_THEME:-<unset>}"
+   typeset -p PROMPT RPROMPT precmd_functions preexec_functions 2>/dev/null
+   for cmd in starship oh-my-posh p10k; do whence -va "$cmd" 2>/dev/null; done
    ```
 
-   The earlier full-history grep found no `P` lines. This raw sample should
-   expose the prefix on the actual prompt row; do not infer the prompt's
-   status from the controlled test.
+   Do not infer the framework from the glyphs alone or overwrite prompt hooks.
 
-2. **[x] Verify controlled OSC 133 handling.** The direct-emission disposable
-   pane displayed all sentinels, with `P TKM_OSC133_A_PROBE`,
-   `- TKM_OSC133_B_PROBE`, and `O TKM_OSC133_C_PROBE`. This proves that
-   tmux 3.8 recognizes explicit A/C markers. The earlier truncated output is
-   retained as historical evidence in the runtime log, not treated as a
+4. Once the real prompt is reliably marked, cover repeated/missing progress
+   markers, missing prompt markers, blank lines, multiline output, and safe
    failure.
-
-3. If the normal zsh prompt still lacks a `P` flag, identify the active shell
-   prompt framework and its supported OSC 133 integration before changing
-   configuration. Do not guess at or overwrite prompt hooks.
-
-4. Once the real prompt is marked, cover repeated/missing progress markers,
-   missing prompt markers, blank lines, multiline output, and safe failure.
 5. Add selector tests to the existing `_test/test_pytest_clipboard.py` and
    use the normal project runner; do not create an isolated pytest harness.
 
-**Exit condition:** direct marker emission is captured with the expected
-flags, the normal prompt is reliably marked, and positive/negative cases prove
-the range contract. No TKM implementation change until the behavior contract
-and tests are clear.
+**Exit condition:** explicit markers and the actual interactive prompt are
+both understood, and positive/negative cases prove the range contract. No
+TKM implementation change until the behavior contract and tests are clear.
 
 ### Gate 5 — Write behavior tests and implement
 
