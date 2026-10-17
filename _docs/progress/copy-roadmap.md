@@ -160,15 +160,16 @@ markers, not a replacement for them. Do not fall back to visible-prompt text.
    ```sh
    (
        probe="tkm-osc133-probe-$$"
-       tmux new-session -d -s "$probe" "sh -c 'printf \"\\033]133;A\\007TKM_OSC133_A_PROBE\\n\\033]133;C\\007TKM_OSC133_C_PROBE\\n\"; sleep 30'" || exit 1
+       tmux new-session -d -s "$probe" "sh -c 'printf \"\\033]133;A\\007TKM_OSC133_A_PROBE\\n\\033]133;B\\007TKM_OSC133_B_PROBE\\n\\033]133;C\\007TKM_OSC133_C_PROBE\\n\\033]133;D;0\\007\"; sleep 30'" || exit 1
        trap 'tmux kill-session -t "$probe" 2>/dev/null || true' EXIT
        sleep 1
        tmux capture-pane -pF -t "$probe:0.0" -S - | tail -n 12 | sed -n 'l'
    )
    ```
 
-   First confirm that both sentinel strings are visible. Only then interpret
-   whether their flags are `P` and `O`.
+   First confirm that all three sentinel strings are visible. Then check that
+   the A line is flagged `P` and the C line is flagged `O`; the B line shows
+   the command-start transition.
 3. If controlled markers get the expected flags but the normal zsh prompt
    does not, identify the active prompt framework and its supported OSC 133
    integration before changing shell configuration.
