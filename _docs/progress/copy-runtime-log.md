@@ -24,7 +24,7 @@ from the Termux environment. Source-level analysis is recorded in
 | Root binding selection anchor and visible extension | **PASS** | Moving down to line end after beginning selection visibly highlighted fixture lines 1–2 |
 | End-to-end root binding with selection and clipboard | **PASS** | The isolated root Ctrl+G binding copied exactly the first two fixture lines to Android clipboard on a subsequent attach/copy attempt |
 | Invocation from the `copy-mode` table | **PASS** | The isolated Ctrl+G test binding copied the intended two fixture lines to Android clipboard and exited copy mode |
-| Invocation from the `copy-mode-vi` table | **NOT TESTED** | The vi table binding is installed in the fixture config but has not been exercised with vi mode active |
+| Invocation from the `copy-mode-vi` table | **NOT TESTED** | Explicitly excluded from the current acceptance scope by the 2026-10-17 scope decision; no vi-mode trial will be run |
 | Exclude a real interactive shell prompt | **NOT TESTED** | The subset test used a printed marker, not a live shell prompt |
 | Locate pytest or `Patch Failed` semantic boundaries | **NOT TESTED** | The test selected a known line range rather than discovering markers |
 | Missing-marker and failure behavior | **NOT TESTED** | No negative semantic-selector test was run |
@@ -138,8 +138,9 @@ selection limitation.
    technically plausible and worth continuing to test.
 5. Isolated root- and `copy-mode`-table test bindings have copied a known
    range to Android clipboard; the `copy-mode` test also exited copy mode.
-   The `copy-mode-vi` context and actual TKM binding integration remain
-   untested.
+   The `copy-mode-vi` context is deliberately out of scope by the
+   2026-10-17 decision recorded below. Actual TKM binding integration and
+   semantic boundary discovery remain untested.
 6. These tests do not yet prove automatic pytest/`Patch Failed` boundary
    discovery or reliable exclusion of a real terminal prompt.
 7. These tests do not compare the external Termux clipboard pipe with tmux's
@@ -287,9 +288,10 @@ discovery remain untested.
 
 Before changing TKM source, test and record:
 
-1. **Execution contexts:** root and `copy-mode` isolated test bindings now
-   pass. Exercise `copy-mode-vi` next, then verify the actual TKM binding
-   integration when implementation begins.
+1. **Execution contexts:** root and `copy-mode` isolated test bindings pass.
+   `copy-mode-vi` is explicitly out of scope by the decision in Section 9; it
+   is not a remaining proof gate. Verify actual TKM binding integration when
+   implementation begins.
 2. **Cursor and prompt boundaries:** determine how the selection endpoint
    relates to pane output, the live shell prompt, and the application cursor.
 3. **Semantic selection:** identify the required pytest result/progress start
@@ -301,3 +303,16 @@ Before changing TKM source, test and record:
    the same contract.
 
 No TKM implementation change is implied by this evidence record alone.
+
+
+## 9. Scope decision — omit vi-mode proof (2026-10-17)
+
+The user explicitly chose not to spend time proving the `copy-mode-vi` key
+table. This is a scope decision, not a test result: vi-mode was not tested,
+and this work makes no claim that the copy binding works when invoked from
+that table.
+
+For this refactor, the required execution contexts are the root table and
+emacs-style `copy-mode`. Do not run another `copy-mode-vi` trial or treat it
+as a blocker. Continue with semantic subset and prompt-boundary contracts,
+negative cases, behavior tests, then implementation.

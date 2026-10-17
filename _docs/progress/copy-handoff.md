@@ -45,8 +45,9 @@ implementation.
   clipboard output had no trailing newline after `TKM_CONTEXT_START`.
 
 These are test bindings and manually selected ranges, not a completed TKM
-implementation. Root and `copy-mode` have passed; `copy-mode-vi` and actual
-TKM binding integration remain untested.
+implementation. Root and `copy-mode` have passed. `copy-mode-vi` is explicitly
+out of scope by the 2026-10-17 decision below; actual TKM binding integration
+and semantic boundary discovery remain untested.
 
 ## Most recent correction
 
@@ -82,19 +83,17 @@ where the interactive trial occurred. The later `copy-mode` trial also passed;
 
 ## Immediate next action
 
-Continue at Roadmap Gate 3 with `copy-mode-vi`. The existing isolated server
-was started with a `sleep 3600` fixture and the config loaded Ctrl+G bindings
-into both copy-mode tables. The last trial set `mode-keys emacs`, so it
-exercised only `copy-mode`.
+Continue at Roadmap Gate 4: define and test semantic subset boundaries and
+prompt exclusion. Start with the pytest-result range and `Patch Failed` range,
+including the requirement to stop immediately before the real final terminal
+prompt. Then cover repeated/missing markers, blank lines, multiline output,
+unrelated output, and unsafe/missing endpoints. Update the behavior contract
+and tests before changing TKM source.
 
-Check that session `proof` still exists, then set the window to
-`mode-keys vi`. Reset the Android clipboard, attach, enter copy mode with
-Ctrl+B then `[`, press Ctrl+G, and detach. Verify the tmux buffer, clipboard,
-and `pane_in_mode` state. Reset the clipboard before attaching and manually
-type `termux-clipboard-get | cat -vet` after detaching so copying diagnostics
-does not overwrite the result. Keep the earlier inconclusive clipboard check
-in the log. Do not change TKM source until behavior contracts are understood
-and tests are written first.
+**Scope decision (2026-10-17):** do not run a `copy-mode-vi` trial. Vi-mode
+proof is intentionally excluded from this refactor's acceptance criteria. The
+required isolated contexts are root and emacs-style `copy-mode`; no claim is
+made about invocation from the vi key table.
 
 ## Constraints
 

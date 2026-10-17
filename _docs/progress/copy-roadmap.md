@@ -1,7 +1,7 @@
 # Native Tmux Copy Refactor — Roadmap
 
 **Status updated:** 2026-10-17  
-**Implementation status:** Not started; runtime proof is still in progress.
+**Implementation status:** Not started; Gate 3 is complete for the agreed scope and semantic-boundary work is next.
 
 ## Objective
 
@@ -14,8 +14,10 @@ execution. Provide one shared copy executor for three callers:
 - **copy_subset** — semantic result ranges, initially pytest output and
   **Patch Failed** output.
 
-All three actions must work from **root**, **copy-mode**, and
-**copy-mode-vi**. The clipboard path must be proven. The legacy helpers and all
+All three actions must work from the **root** table and emacs-style
+**copy-mode**. The clipboard path must be proven. The **copy-mode-vi** table is
+explicitly out of scope for this refactor; do not block work on vi-mode proof
+or imply that behavior there has been verified. The legacy helpers and all
 references to them must be removed; no legacy fallback or dual implementation
 is allowed.
 
@@ -56,7 +58,7 @@ configured macros. They prove individual tmux operations only.
 - [x] Prove the root binding's selection anchor and visible range.
 - [x] Prove the isolated root binding's selection-to-clipboard path end-to-end.
 - [x] Prove the isolated action behavior in the `copy-mode` table.
-- [ ] Prove the equivalent action behavior in the `copy-mode-vi` table.
+- [x] Record `copy-mode-vi` as out of scope; no vi-mode proof is required.
 - [ ] Define and test semantic subset discovery and prompt exclusion.
 - [ ] Write behavior tests before changing implementation.
 - [ ] Implement the central native copy executor and the three callers.
@@ -105,24 +107,26 @@ the multi-step binding trial.
 **Exit condition:** one root-table binding selects a known marker range and
 copies exactly that range.
 
-### Gate 3 — Establish the three execution contexts
+### Gate 3 — Establish the required execution contexts
 
-**Status: in progress — root and `copy-mode` test bindings pass;
-`copy-mode-vi` remains untested.**
+**Status: complete for the agreed scope — root and emacs-style `copy-mode`
+pass; `copy-mode-vi` is explicitly out of scope by the 2026-10-17 decision.**
 
 Run the action and verify its state changes independently from:
 
 1. [x] root — isolated root-table binding passed (Gate 2).
 2. [x] `copy-mode` — isolated binding passed with `mode-keys emacs`.
-3. [ ] `copy-mode-vi` — not yet exercised with vi mode active.
 
 Do not assume an entry or cancellation sequence that works from root works
 when copy mode is already active. Keep the executor mechanics shared; use
 context-specific dispatch only where runtime evidence requires it. These
 trials are test bindings, not TKM's production bindings.
 
-**Exit condition:** the action's expected selection and exit behavior is
-proven in all three contexts, without state leakage.
+No claim is made about invoking the binding from `copy-mode-vi`; that context
+is not an acceptance requirement for this refactor.
+
+**Exit condition:** expected selection and exit behavior is proven in both
+required contexts, without state leakage.
 
 ### Gate 4 — Prove semantic subset contracts
 
