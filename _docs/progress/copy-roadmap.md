@@ -37,13 +37,15 @@ is allowed.
 - [x] Root-table Ctrl+G entry to copy mode proved.
 - [x] The chained root probe, copy-mode followed by history-top, moved the
   cursor to position 1,1.
+- [x] A root binding anchored a selection at history-top and visibly
+  highlighted fixture lines 1–2 after moving down and to line end.
 
 These last three checks used a test binding, not TKM's actual configured
 macros. They prove individual tmux operations only.
 
 ### Open work
 
-- [ ] Prove selection start and visible range using a root binding.
+- [x] Prove the root binding's selection anchor and visible range.
 - [ ] Prove the full binding-driven selection-to-clipboard path end-to-end.
 - [ ] Prove the equivalent action behavior in copy-mode and copy-mode-vi.
 - [ ] Define and test semantic subset discovery and prompt exclusion.
@@ -56,7 +58,7 @@ macros. They prove individual tmux operations only.
 
 ### Gate 1 — Keep the interactive test fixture alive
 
-**Status: next**
+**Status: complete**
 
 The isolated pane used sleep 300, which expired after five minutes. The last
 [exited] result aligns with that lifetime; do not misclassify this as a
@@ -76,9 +78,12 @@ the multi-step binding trial.
 
 ### Gate 2 — Prove selection mechanics from the root table
 
+**Status: in progress — selection anchor and visible range passed; clipboard transfer remains unproven.**
+
 - Bind Ctrl+G to enter copy mode, move to history-top, move to line start,
   and begin selection.
-- Confirm the cursor/selection anchor is at the first marker.
+- [x] Confirm the cursor/selection anchor is at the first marker and that
+  moving down to line end visibly selects the first two fixture lines.
 - Extend selection to the intended end, use
   copy-pipe-and-cancel with termux-clipboard-set, and inspect the clipboard.
 - Verify the exact expected text and confirm that before/after markers are

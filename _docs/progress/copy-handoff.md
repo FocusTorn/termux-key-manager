@@ -34,6 +34,8 @@ implementation.
 - A root binding entered copy mode.
 - A chained root binding, copy-mode followed by send-keys -X history-top,
   entered copy mode and moved the cursor to 1,1.
+- The root Ctrl+G test binding started selection at history-top; after moving
+  down and to line end, fixture lines 1–2 were visibly highlighted.
 
 These were test bindings and manually selected ranges, not a completed TKM
 implementation or proof across all three key tables.
@@ -49,23 +51,28 @@ server was killed.
 
 An earlier all-in-one binding did not place the expected markers on the
 clipboard; it placed literal termux-clipboard-get command text there. That
-trial is inconclusive because the correct binding/client/pane state was not
-established throughout the attempt.
+trial remains inconclusive because the correct binding/client/pane state was
+not established throughout the attempt.
+
+The direct multi-command `bind-key` invocation at the outer zsh prompt returned
+`not in a mode`. Loading the binding from a tmux configuration file with
+`source-file` registered the command list correctly. The current selection
+binding then visibly highlighted the first two fixture lines.
 
 ## Immediate next action
 
-Resume at Roadmap Gate 1, using a fixture that outlives the trial:
+Resume at Roadmap Gate 2 using the existing long-lived `proof` session. Keep
+the successful sequence and append `copy-pipe-and-cancel` with
+`termux-clipboard-set` to the root Ctrl+G binding, so the binding copies the
+currently selected first two lines and exits copy mode. Store the sequence in
+a tmux configuration file and load it with `source-file`; then verify it with
+`list-keys`, attach, and press Ctrl+G.
 
-~~~sh
-tmux -L tkm-root-key-proof -f /dev/null new-session -d -x 80 -y 12 -s proof "printf '%s\n' TKM_CONTEXT_BEFORE TKM_CONTEXT_START TKM_CONTEXT_RESULT_1 TKM_CONTEXT_RESULT_2 TKM_CONTEXT_AFTER; sleep 3600"
-~~~
-
-Then add a root binding that chains only these operations, in order:
-copy-mode, history-top, start-of-line, begin-selection. Verify the binding
-with list-keys, attach to the proof session, and check the selection anchor
-before adding cursor movement or clipboard piping. Complete the next trial
-in the same long-lived session; record each observation in the log and update
-the roadmap before rewriting this handoff.
+Detach back to Termux and inspect `termux-clipboard-get`. Expected content is
+exactly `TKM_CONTEXT_BEFORE` and `TKM_CONTEXT_START` on separate lines, with
+no other marker lines. Keep the test isolated and do not change TKM source.
+After the trial, record the result in the runtime log, update roadmap status,
+and rewrite this handoff last.
 
 ## Constraints
 

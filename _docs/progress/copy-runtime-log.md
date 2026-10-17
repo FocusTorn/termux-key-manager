@@ -21,6 +21,7 @@ from the Termux environment. Source-level analysis is recorded in
 | Isolated root-table key recognition | **PASS** | Attached client Ctrl+G displayed `TKM_ROOT_KEY_OK` |
 | Root binding enters copy mode | **PASS** | Copy-mode position indicator appeared after Ctrl+G |
 | Chained `copy-mode` + `history-top` binding | **PASS** | Cursor observed at `1,1` while copy mode remained active |
+| Root binding selection anchor and visible extension | **PASS** | Moving down to line end after beginning selection visibly highlighted fixture lines 1–2 |
 | End-to-end root binding with selection and clipboard | **INCONCLUSIVE** | Prior attempt yielded shell command text instead of expected markers |
 | Invocation from `copy-mode` and `copy-mode-vi` | **NOT TESTED** | No actual TKM bindings were exercised in either table |
 | Exclude a real interactive shell prompt | **NOT TESTED** | The subset test used a printed marker, not a live shell prompt |
@@ -165,6 +166,22 @@ contract.
    check reported `PANE_IN_MODE=0`, and a subsequent server had lost its
    binding. The test did not prove a successful full chain, but it also did
    not isolate the cause to selection or clipboard piping.
+
+5. **PASS — root-binding selection anchor and extension.** In the fresh
+   long-lived `proof` fixture, the root Ctrl+G binding chained `copy-mode`,
+   `history-top`, `start-of-line`, and `begin-selection`. The cursor was
+   observed at `1,1`. After adding `cursor-down` and `end-of-line`, the user
+   reported that fixture lines 1 and 2 were visibly highlighted. This proves
+   the selection anchor and visible extension; clipboard transfer from this
+   complete binding remains untested.
+
+### Command-queue correction
+
+The direct command entered at the outer zsh prompt returned `not in a mode`.
+Loading the full command list from a tmux configuration file with `source-file`
+registered the chained binding, after which the selection test passed. Treat
+the first command form as a command-parsing/setup issue, not a selection
+failure.
 
 ### Test-fixture lifetime finding
 
