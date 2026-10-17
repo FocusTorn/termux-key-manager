@@ -22,7 +22,7 @@ from the Termux environment. Source-level analysis is recorded in
 | Root binding enters copy mode | **PASS** | Copy-mode position indicator appeared after Ctrl+G |
 | Chained `copy-mode` + `history-top` binding | **PASS** | Cursor observed at `1,1` while copy mode remained active |
 | Root binding selection anchor and visible extension | **PASS** | Moving down to line end after beginning selection visibly highlighted fixture lines 1–2 |
-| End-to-end root binding with selection and clipboard | **INCONCLUSIVE** | Earlier attempt yielded literal command text; latest invocation left the clipboard empty, and the active isolated server was not confirmed |
+| End-to-end root binding with selection and clipboard | **PASS** | The isolated root Ctrl+G binding copied exactly the first two fixture lines to Android clipboard on a subsequent attach/copy attempt |
 | Invocation from `copy-mode` and `copy-mode-vi` | **NOT TESTED** | No actual TKM bindings were exercised in either table |
 | Exclude a real interactive shell prompt | **NOT TESTED** | The subset test used a printed marker, not a live shell prompt |
 | Locate pytest or `Patch Failed` semantic boundaries | **NOT TESTED** | The test selected a known line range rather than discovering markers |
@@ -198,6 +198,32 @@ failure.
    explicitly attach with `tmux -L tkm-root-key-proof attach-session -t proof`
    before retrying. Do not infer selection or clipboard success from a stored
    binding or from copy mode closing.
+
+
+7. **PASS — root-binding selection-to-clipboard path (2026-10-17).** The
+   isolated server was stopped and recreated from the outer Termux shell,
+   with `TMUX` and `TMUX_PANE` unset and a long-lived `sleep 3600` fixture.
+   The root Ctrl+G binding was loaded from a configuration file and verified
+   in the root key table. The first clipboard check after an attempt was
+   empty; after a subsequent attach/copy/detach cycle,
+   `termux-clipboard-get | cat -vet` returned the intended fixture text:
+
+   ```text
+   TKM_CONTEXT_BEFORE$
+   TKM_CONTEXT_START
+   ```
+
+   The second line had no trailing newline, matching the tmux buffer: both
+   stored buffers were 36 bytes and contained
+   `TKM_CONTEXT_BEFORE\\nTKM_CONTEXT_START`. The shell prompt appeared
+   immediately after the second line, consistent with that buffer content.
+
+   **Result: PASS for this isolated root-table binding.** The complete path
+   selected the expected range and transferred it to Android clipboard through
+   `copy-pipe-and-cancel 'termux-clipboard-set'`. The cause of the earlier
+   empty clipboard read remains undetermined. This does not prove behavior
+   from `copy-mode` or `copy-mode-vi`, actual TKM bindings, or semantic
+   boundary discovery.
 
 ### Test-fixture lifetime finding
 

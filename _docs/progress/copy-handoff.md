@@ -36,6 +36,10 @@ implementation.
   entered copy mode and moved the cursor to 1,1.
 - The root Ctrl+G test binding started selection at history-top; after moving
   down and to line end, fixture lines 1–2 were visibly highlighted.
+- The isolated root Ctrl+G binding copied exactly TKM_CONTEXT_BEFORE and
+  TKM_CONTEXT_START to the Android clipboard through the copy pipe. The
+  selected buffer has no trailing newline. This proves only the root-table
+  test binding, not all three key tables or actual TKM bindings.
 
 These were test bindings and manually selected ranges, not a completed TKM
 implementation or proof across all three key tables.
@@ -59,30 +63,27 @@ The direct multi-command `bind-key` invocation at the outer zsh prompt returned
 `source-file` registered the command list correctly. The selection-only
 binding visibly highlighted the first two fixture lines.
 
-The subsequent binding added `copy-pipe-and-cancel 'termux-clipboard-set'`,
-but the reported clipboard was empty. No visible highlight after this command
-is expected because it exits copy mode and clears the selection; it does not
-prove that the copy succeeded. The current result is **INCONCLUSIVE** because
-the client/server used for the copy attempt was not conclusively identified.
+The subsequent binding added `copy-pipe-and-cancel 'termux-clipboard-set'`.
+The first clipboard check remained empty, so that attempt was inconclusive.
+A later retry superseded that state for the isolated root-binding path: the
+server was recreated from the outer Termux shell (with `TMUX` unset), the
+binding was loaded and verified, and a subsequent attach/copy/detach cycle
+returned exactly `TKM_CONTEXT_BEFORE` and `TKM_CONTEXT_START`. The buffer
+was 36 bytes with no trailing newline, matching the clipboard output. The
+cause of the initial empty read remains unknown; the end-to-end root binding
+is now **PASS**. This does not prove the other key tables or TKM bindings.
 
 ## Immediate next action
 
-Diagnose the empty clipboard result before changing the binding again.
+Continue at Roadmap Gate 3: establish the action's behavior independently
+from the `root`, `copy-mode`, and `copy-mode-vi` key tables.
 
-1. From a plain Termux shell, test `printf '%s\\n' TKM_CLIPBOARD_API_TEST | termux-clipboard-set`
-   and confirm `termux-clipboard-get` returns that exact marker.
-2. Inspect the isolated server with `tmux -L tkm-root-key-proof list-sessions`
-   and verify the root Ctrl+G binding with
-   `tmux -L tkm-root-key-proof list-keys -T root C-g`.
-3. Attach explicitly using
-   `tmux -L tkm-root-key-proof attach-session -t proof`, press Ctrl+G once,
-   detach, and inspect the clipboard again.
-
-Keep the binding loaded through the configuration file and `source-file`.
-Do not treat the missing highlight as a selection failure when
-`copy-pipe-and-cancel` closes copy mode. Do not change TKM source. Record the
-next observed result in the runtime log, update the roadmap, and rewrite this
-handoff last.
+Use the isolated fixture and verify the selection, tmux buffer, clipboard
+contents, and mode exit behavior for each context. Do not assume that the
+dispatch or cancellation sequence proven from `root` also works when copy
+mode is already active. Keep the earlier empty clipboard attempt in the log;
+its cause is unknown. Do not change TKM source until the behavior contracts
+are understood and tests are written first.
 
 ## Constraints
 

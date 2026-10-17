@@ -39,6 +39,8 @@ is allowed.
   cursor to position 1,1.
 - [x] A root binding anchored a selection at history-top and visibly
   highlighted fixture lines 1–2 after moving down and to line end.
+- [x] The isolated root Ctrl+G binding copied exactly the two intended
+  fixture lines to the Android clipboard through the clipboard pipe.
 
 These last three checks used a test binding, not TKM's actual configured
 macros. They prove individual tmux operations only.
@@ -46,7 +48,7 @@ macros. They prove individual tmux operations only.
 ### Open work
 
 - [x] Prove the root binding's selection anchor and visible range.
-- [ ] Prove the full binding-driven selection-to-clipboard path end-to-end.
+- [x] Prove the isolated root binding's selection-to-clipboard path end-to-end.
 - [ ] Prove the equivalent action behavior in copy-mode and copy-mode-vi.
 - [ ] Define and test semantic subset discovery and prompt exclusion.
 - [ ] Write behavior tests before changing implementation.
@@ -78,19 +80,19 @@ the multi-step binding trial.
 
 ### Gate 2 — Prove selection mechanics from the root table
 
-**Status: in progress — selection anchor/range passed; the clipboard attempt returned empty and server/binding context must be confirmed.**
+**Status: complete — the isolated root Ctrl+G binding copied exactly the intended two fixture lines on a subsequent attach/copy attempt.**
 
 - Bind Ctrl+G to enter copy mode, move to history-top, move to line start,
   and begin selection.
 - [x] Confirm the cursor/selection anchor is at the first marker and that
   moving down to line end visibly selects the first two fixture lines.
-- Extend selection to the intended end and invoke
+- [x] Extend the selection to the intended end and invoke
   copy-pipe-and-cancel with termux-clipboard-set.
-- [ ] Diagnose the empty clipboard result: verify the current clipboard
-  helper round-trip, inspect the isolated server and stored binding, and
-  explicitly attach to the intended server before retrying.
-- Verify the exact expected text and confirm that before/after markers are
-  excluded.
+- [x] Verify that the Android clipboard contains exactly
+  TKM_CONTEXT_BEFORE and TKM_CONTEXT_START, excluding before/after markers.
+- Note: the first post-copy clipboard check was empty; a subsequent
+  attach/copy attempt passed. The cause of the first empty read remains
+  undetermined.
 - Record each successful increment separately in the progress log.
 
 **Exit condition:** one root-table binding selects a known marker range and
