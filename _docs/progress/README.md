@@ -78,6 +78,6 @@ the handoff. Update this README when the document roles or procedure change.
 
 - Do not change TKM implementation until the required behavior contracts have
   been demonstrated and the relevant tests have been written.
-- The legacy helpers named **cpy_*** must be decommissioned; no fallback,
+- The legacy helper family `cpy_*` must be decommissioned; no fallback,
   parallel implementation, or compatibility path is part of the target design.
 - Keep evidence, inference, and open questions explicitly separate.
