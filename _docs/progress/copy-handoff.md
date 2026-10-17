@@ -47,7 +47,9 @@ implementation.
 These are test bindings and manually selected ranges, not a completed TKM
 implementation. Root and `copy-mode` have passed. `copy-mode-vi` is explicitly
 out of scope by the 2026-10-17 decision below; actual TKM binding integration
-and semantic boundary discovery remain untested.
+and semantic boundary discovery remain untested. Source-level research found
+a tmux 3.7c prompt-line flag candidate (`capture-pane -F`), but its availability
+in the target shell has not been runtime verified.
 
 ## Most recent correction
 
@@ -83,12 +85,29 @@ where the interactive trial occurred. The later `copy-mode` trial also passed;
 
 ## Immediate next action
 
-Continue at Roadmap Gate 4: define and test semantic subset boundaries and
-prompt exclusion. Start with the pytest-result range and `Patch Failed` range,
-including the requirement to stop immediately before the real final terminal
-prompt. Then cover repeated/missing markers, blank lines, multiline output,
-unrelated output, and unsafe/missing endpoints. Update the behavior contract
-and tests before changing TKM source.
+Continue at Roadmap Gate 4 with pytest-result range and prompt exclusion.
+The `Patch Failed` selector is deferred for now.
+
+Source-level research found that tmux 3.7c's `capture-pane -F` can prefix
+captured lines with flags, including `P` for prompt lines and `O` for
+output-start lines. This is only a candidate mechanism: the live Termux shell
+must emit OSC 133 markers for those flags to appear.
+
+Run this in the active tmux pane, at a shell prompt, and inspect the returned
+lines for a `P` flag prefix:
+
+```sh
+tmux capture-pane -pF -S - | grep -E '^[A-Z-]*P[A-Z-]* ' | tail -n 5
+```
+
+If it prints no `P` lines, report that rather than falling back to textual
+prompt matching. Once the real prompt flag is established, prove that the
+latest pytest progress line through the line before the final `P` line is
+selected, with the progress line included and the prompt excluded. Cover
+repeated/missing markers, blank lines, multiline output, and safe failure.
+Add tests to the existing `_test/test_pytest_clipboard.py`; avoid a separate
+pytest isolation harness and use `./_test/run force` for full-suite
+verification. Do not modify TKM source until the contract and tests are clear.
 
 **Scope decision (2026-10-17):** do not run a `copy-mode-vi` trial. Vi-mode
 proof is intentionally excluded from this refactor's acceptance criteria. The

@@ -345,3 +345,33 @@ The source establishes these facts:
 
 These findings constrain, but do not yet choose, the TKM implementation.
 
+## 13. Prompt and output line flags in tmux 3.7c
+
+tmux 3.7c supports `capture-pane -F`, which prefixes each captured line
+with that grid line's flags. Relevant values include `P` for a line marked
+as a prompt and `O` for a line marked as output. The flag prefix is metadata
+from tmux, not text inferred from the visible shell prompt.
+
+These flags depend on shell integration: the shell must emit OSC 133 prompt
+and output markers for tmux to mark the corresponding lines. tmux also has
+prompt-navigation commands, but they depend on the same shell markers.
+
+For pytest subset copying, the candidate boundary strategy is therefore:
+
+- Capture with `tmux capture-pane -pF -S -`.
+- Find the final captured line whose flag prefix contains `P`; exclude that
+  prompt line and everything after it.
+- Find the latest valid pytest progress line before that prompt line and
+  include the progress line itself, matching the existing pytest-output
+  contract.
+- If either boundary is absent, fail closed rather than guessing from prompt
+  text or `#{cursor_y}`.
+- Preserve all captured content between the two boundaries, including blank
+  lines and multiline failure output.
+
+This is a source-level candidate, not runtime proof. It must first be checked
+against the user's actual Termux shell: a tmux version with `-F` support is
+not enough if the shell does not emit the required markers.
+
+Reference: [tmux 3.7c `capture-pane` manual](https://libtmux.org/en/tmux/latest/manual/capture-pane/).
+

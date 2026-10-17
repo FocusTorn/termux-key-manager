@@ -128,27 +128,45 @@ is not an acceptance requirement for this refactor.
 **Exit condition:** expected selection and exit behavior is proven in both
 required contexts, without state leakage.
 
-### Gate 4 — Prove semantic subset contracts
+### Gate 4 — Prove pytest subset and prompt exclusion
 
-**Pytest range**
+**Status: pending live-shell marker proof.** The `Patch Failed` marker
+range is deferred for now; do not implement or test that selector as part of
+this gate.
 
-- Start at the last relevant pytest result/progress line plus one line, per
-  the agreed contract.
-- End at the line immediately before the final live terminal prompt.
-- Exclude the prompt itself.
+**Pytest subset contract**
 
-**Patch Failed range**
+- Capture all available history with tmux 3.7c line flags
+  (`capture-pane -pF -S -`).
+- Select from the latest valid pytest progress line before the final prompt
+  line, including that progress line.
+- Exclude the final line marked with the tmux prompt flag `P`, and exclude
+  everything after it.
+- Use tmux's prompt metadata, not text that merely resembles a shell prompt
+  and not `#{cursor_y}`, to locate the endpoint.
+- Preserve captured text between the boundaries, including blank lines and
+  multiline failure evidence.
+- If no final prompt marker or no valid pytest progress line exists before
+  it, fail closed without copying a guessed range.
+- A prompt-like line without the `P` flag is ordinary output.
 
-- Start at Patch Failed.
-- End at the line immediately before the final live terminal prompt.
-- Exclude the prompt itself.
+**Required proof sequence**
 
-Also prove behavior for repeated/missing markers, blank lines, multiline
-output, unrelated output, and cases where no safe endpoint can be found.
-Fail safely rather than copying a guessed range.
+1. Confirm the current Termux shell produces prompt flags in a live tmux pane.
+   The source-level `capture-pane -F` capability does not prove that the
+   shell emits OSC 133 markers.
+2. Prove the actual final live prompt is flagged and excluded in a controlled
+   runtime sample. Keep earlier prompt-like output inside the sample.
+3. Cover repeated progress markers (choose the latest one before the final
+   prompt), missing progress markers, missing prompt markers, blank lines, and
+   multiline failure output.
+4. Add the stable selector tests to the existing
+   `_test/test_pytest_clipboard.py`; use the project's normal test runner
+   rather than creating an isolated pytest harness.
 
-**Exit condition:** positive and negative cases demonstrate the boundary rules
-against controlled content, including the real prompt-boundary case.
+**Exit condition:** target-shell output demonstrates a reliable final-prompt
+flag, and positive/negative cases prove the range contract. No TKM source
+change is authorized by source inspection alone.
 
 ### Gate 5 — Write behavior tests and implement
 
