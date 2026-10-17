@@ -86,9 +86,10 @@ where the interactive trial occurred. The later `copy-mode` trial also passed;
 ## Immediate next action
 
 Continue with OSC 133; do not switch to visible-prompt matching. The user's
-current tmux 3.8 capture showed only `-` flags, and the first controlled
-`zsh -f` test showed neither sentinel string. That controlled attempt is
-inconclusive because it did not prove the marker payload ran.
+full-history prompt grep found no `P` lines. The direct-emission test then
+showed only twelve blank rows because the capture was truncated with `tail`;
+that result is inconclusive and does not show whether the sentinel lines were
+present earlier in the capture.
 
 Use a disposable pane to emit the sequences directly, bypassing interactive
 `send-keys` parsing:
@@ -99,15 +100,15 @@ Use a disposable pane to emit the sequences directly, bypassing interactive
     tmux new-session -d -s "$probe" "sh -c 'printf \"\\033]133;A\\007TKM_OSC133_A_PROBE\\n\\033]133;B\\007TKM_OSC133_B_PROBE\\n\\033]133;C\\007TKM_OSC133_C_PROBE\\n\\033]133;D;0\\007\"; sleep 30'" || exit 1
     trap 'tmux kill-session -t "$probe" 2>/dev/null || true' EXIT
     sleep 1
-    tmux capture-pane -pF -t "$probe:0.0" -S - | tail -n 12 | sed -n 'l'
+    tmux capture-pane -pF -t "$probe:0.0" -S - | sed -n 'l'
 )
 ```
 
 First verify `TKM_OSC133_A_PROBE`, `TKM_OSC133_B_PROBE`, and
-`TKM_OSC133_C_PROBE` all appear. Then inspect the A line for `P` and the C
-line for `O`; B marks the command-start transition. If the strings are missing,
-stop and report the raw output; the controlled test still has not run
-successfully. If they show the expected flags but the regular zsh prompt is
+`TKM_OSC133_C_PROBE` all appear in the untruncated output. Then inspect the A
+line for `P` and the C line for `O`; B marks the command-start transition. If
+the strings are missing, report the entire raw capture; the controlled test
+still has not run successfully. If they show the expected flags but the regular zsh prompt is
 unmarked, investigate the actual prompt framework's OSC 133 support before
 changing hooks. The `Patch Failed` selector remains deferred. Once prompt
 flags work, return to the pytest range contract and tests in the existing

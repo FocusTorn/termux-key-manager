@@ -347,23 +347,24 @@ change production shell configuration before this distinction is established.
 
 ## 11. Controlled marker probe did not emit evidence (2026-10-17)
 
-The user reports `tmux 3.8`. Raw capture with `tmux capture-pane -pF`
-showed lines prefixed with `-` (no flags) and a visible `$ ` prompt. No
-`P`-flagged prompt line appeared in the captured sample.
+The user reports `tmux 3.8`. The first full-history capture piped into
+a grep for `P`-prefixed lines returned no matches, so the active shell's
+prompt marking was not demonstrated. This does not establish why the prompt
+was unmarked.
 
-The subsequent controlled trial started a detached `zsh -f` session, sent a
-`printf` command with intended OSC 133 `A` and `C` sequences through
-`tmux send-keys`, and captured its last twelve lines. The result contained
-only dash-prefixed blank lines; neither `TKM_OSC133_A_PROBE` nor
-`TKM_OSC133_C_PROBE` appeared.
+The user then ran the direct-emission probe in a disposable pane. Its capture
+ended with `tail -n 12 | sed -n 'l'` and showed twelve dash-prefixed blank
+rows. Because `tail` retained only the final rows of the pane capture, it
+could have dropped the sentinel lines that were printed earlier. That output
+does not establish whether the sentinels appeared or whether tmux assigned
+`P` / `O` flags to them.
 
-**Classification: INCONCLUSIVE (controlled-probe setup).** The capture did
-not show the sentinel text, so it did not prove that the marker payload was
-executed or received. This does not falsify tmux's documented line-flag support
-or OSC 133 as the preferred mechanism.
+**Classification: INCONCLUSIVE (capture truncated).** The marker test did not
+yield interpretable evidence; do not classify it as a failure of OSC 133 or
+tmux's flag handling.
 
-Next, bypass interactive shell input and have the disposable pane's command
-emit the markers directly. Inspect the entire raw flag-prefixed output. The
-controlled test must first display both sentinel strings; only then can the
-presence or absence of `P` and `O` flags be interpreted. Keep this distinct
-from testing whether the user's ordinary zsh prompt emits OSC 133.
+Next, repeat the direct-emission probe without `tail`. The disposable pane
+contains only a few test lines, so print the entire bounded capture using
+`sed -n 'l'`. First verify the A, B, and C sentinel text is present; only
+then interpret the line flags. Keep controlled-marker handling distinct from
+testing whether the user's ordinary zsh prompt emits OSC 133.
