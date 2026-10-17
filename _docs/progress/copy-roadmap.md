@@ -177,7 +177,7 @@ https://fossies.org/diffs/tmux/3.7c_vs_3.8/cmd-capture-pane.c-diff.html
 4. [ ] Sync/load the committed theme in Termux and run:
 
    ```sh
-   printf 'TKM_OSC133_OUTPUT_PROBE\\n'
+   printf '%s\n' 'TKM_OSC133_OUTPUT_PROBE'
    tmux capture-pane -pF -S - | tail -n 40 | sed -n 'l'
    ```
 

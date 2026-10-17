@@ -507,7 +507,7 @@ new overlay theme before testing it.
 **Runtime proof after loading the update:**
 
 ```sh
-printf 'TKM_OSC133_OUTPUT_PROBE\\n'
+printf '%s\n' 'TKM_OSC133_OUTPUT_PROBE'
 tmux capture-pane -pF -S - | tail -n 40 | sed -n 'l'
 ```
 
