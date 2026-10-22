@@ -103,8 +103,8 @@ and malformed rows. The user reported the corrected focused run as green.
 The earlier runner rejection was an invalid invocation, not a test failure.
 
 A shared `copy_executor.py` now serves `copy_entire_pane`, `copy_viewport`,
-and `copy_subset`. It uses tmux capture and `load-buffer -w -` for the native
-clipboard path, leaves the clipboard unchanged when subset boundaries fail,
+and `copy_subset`. It uses tmux capture, preserves the tmux paste buffer with `load-buffer -`, and
+uses the proven `termux-clipboard-set` endpoint. It leaves the clipboard unchanged when subset boundaries fail,
 and exits copy mode after actions invoked there. Executor tests and production
 binding tests have been added; the new executor's Termux runtime verification
 is pending.

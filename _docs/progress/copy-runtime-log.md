@@ -621,7 +621,7 @@ classified as an invalid invocation, not a test failure.
 
 Added `copy_executor.py` as the single execution path for `copy_entire_pane`,
 `copy_viewport`, and `copy_subset`. The executor uses `capture-pane` for the
-requested range and `load-buffer -w -` for tmux's native clipboard path. The
+requested range, stores successful text in the tmux paste buffer with `load-buffer -`, and sends the same text to the proven `termux-clipboard-set` endpoint. The
 pytest subset path consumes `capture-pane -pF -S -` and fails closed when its
 prompt/progress boundaries are missing, leaving the clipboard unchanged. When
 the action starts in copy mode, the executor cancels that mode after the copy
@@ -632,6 +632,10 @@ The macro definitions now dispatch directly to the executor; the generated
 or `cpy_pytest` implementations. `copy_viewport` is wired to the existing
 COPY popup, `copy_entire_pane` to CPY_ALL/CPY_PASTE, and `copy_subset` to
 CPY_TEST.
+
+**Clipboard-path decision:** use `termux-clipboard-set`, which was proven in the
+isolated copy-pipe tests, rather than relying on tmux's native `load-buffer -w`
+terminal clipboard path. That native `-w` path remains untested.
 
 **Verification status: SOURCE AND CONTRACT TESTS ADDED; RUNTIME PENDING.** The
 selector suite was user-reported green before this implementation. The new

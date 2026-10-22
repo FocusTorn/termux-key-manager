@@ -57,7 +57,13 @@ def execute_copy(action, pane_id):
         if not output:
             return False
 
-        _run_tmux(["load-buffer", "-w", "-"], input_text=output)
+        _run_tmux(["load-buffer", "-"], input_text=output)
+        subprocess.run(
+            ["termux-clipboard-set"],
+            input=output,
+            text=True,
+            check=True,
+        )
         return True
     finally:
         if in_copy_mode:

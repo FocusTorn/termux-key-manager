@@ -15,7 +15,7 @@ def _mock_tmux(capture_text, pane_mode="0"):
             return subprocess.CompletedProcess(command, 0, stdout=f"{pane_mode}\n", stderr="")
         if command[:2] == ["tmux", "capture-pane"]:
             return subprocess.CompletedProcess(command, 0, stdout=capture_text, stderr="")
-        if command[:2] in (["tmux", "load-buffer"], ["tmux", "send-keys"]):
+        if command[:2] in (["tmux", "load-buffer"], ["tmux", "send-keys"]) or command == ["termux-clipboard-set"]:
             return subprocess.CompletedProcess(command, 0, stdout="", stderr="")
         raise AssertionError(f"unexpected command: {command}")
 
@@ -33,8 +33,10 @@ def test_copy_entire_pane_uses_history_capture_and_native_clipboard():
     capture = _commands(calls, ["tmux", "capture-pane"])[0]
     assert "-S" in capture and capture[capture.index("-S") + 1] == "-"
     assert "-t" in capture and capture[capture.index("-t") + 1] == "%1"
-    clipboard = [kwargs for command, kwargs in calls if command == ["tmux", "load-buffer", "-w", "-"]]
-    assert len(clipboard) == 1
+    buffer_writes = [kwargs for command, kwargs in calls if command == ["tmux", "load-buffer", "-"]]
+    clipboard = [kwargs for command, kwargs in calls if command == ["termux-clipboard-set"]]
+    assert len(buffer_writes) == len(clipboard) == 1
+    assert buffer_writes[0]["input"] == "alpha\nbeta\n"
     assert clipboard[0]["input"] == "alpha\nbeta\n"
 
 
@@ -45,7 +47,8 @@ def test_copy_viewport_uses_visible_capture_and_shared_clipboard_path():
     capture = _commands(calls, ["tmux", "capture-pane"])[0]
     assert "-S" not in capture
     assert "-t" in capture and capture[capture.index("-t") + 1] == "%7"
-    assert _commands(calls, ["tmux", "load-buffer", "-w", "-"])
+    assert _commands(calls, ["tmux", "load-buffer", "-"])
+    assert [kwargs["input"] for command, kwargs in calls if command == ["termux-clipboard-set"]] == ["visible one\nvisible two\n"]
 
 
 def test_copy_subset_selects_latest_pytest_range_and_uses_shared_clipboard():
@@ -65,7 +68,9 @@ def test_copy_subset_selects_latest_pytest_range_and_uses_shared_clipboard():
         assert copy_executor.execute_copy("copy_subset", "%2") is True
     capture = _commands(calls, ["tmux", "capture-pane"])[0]
     assert "-F" in capture and "-S" in capture
-    clipboard = [kwargs for command, kwargs in calls if command == ["tmux", "load-buffer", "-w", "-"]]
+    clipboard = [kwargs for command, kwargs in calls if command == ["termux-clipboard-set"]]
+    buffer_writes = [kwargs for command, kwargs in calls if command == ["tmux", "load-buffer", "-"]]
+    assert buffer_writes[0]["input"] == clipboard[0]["input"]
     assert clipboard[0]["input"] == (
         "....E..                         [100%]\n"
         "================== ERRORS ==================\n"
@@ -88,7 +93,7 @@ def test_copy_from_copy_mode_exits_mode_after_copy():
     calls, fake_run = _mock_tmux("line one\nline two\n", pane_mode="1")
     with patch("copy_executor.subprocess.run", side_effect=fake_run):
         assert copy_executor.execute_copy("copy_viewport", "%4") is True
-    load_index = next(i for i, (command, _) in enumerate(calls) if command == ["tmux", "load-buffer", "-w", "-"])
+    load_index = next(i for i, (command, _) in enumerate(calls) if command == ["tmux", "load-buffer", "-"])
     cancel_index = next(i for i, (command, _) in enumerate(calls) if command == ["tmux", "send-keys", "-t", "%4", "-X", "cancel"])
     assert load_index < cancel_index
 

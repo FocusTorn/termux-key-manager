@@ -236,8 +236,9 @@ required tests pass, and no legacy copy path remains.
 - Entire-pane and viewport copying should share selection/clipboard mechanics;
   the start boundary is the primary difference.
 - Subset callers should reuse that executor and supply their semantic range.
-- Native tmux selection is preferred; the Termux clipboard pipe is acceptable
-  when the pipe remains part of the native tmux action.
+- Native tmux selection is preferred; the proven `termux-clipboard-set` endpoint
+  is used by the shared tmux action executor. tmux's native `load-buffer -w`
+  terminal clipboard path remains untested.
 - capture-pane -b is a tmux paste-buffer operation, not a clipboard write.
 - The cursor_y format is not assumed to represent the copy-mode cursor.
 - Do not change TMUX_ACTION_NATIVE or binding representation by assumption;
