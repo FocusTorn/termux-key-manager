@@ -570,3 +570,35 @@ normal runner before wiring the selector into TKM's native copy actions:
 ```sh
 ./_test/run test_pytest_clipboard.py
 ```
+
+
+## 16. Focused test runner argument correction (2026-10-22)
+
+**User-run command:**
+
+```sh
+./_test/run test_pytest_clipboard.py
+```
+
+**Observed result:**
+
+```text
+test-runner: only one test path is allowed
+```
+
+**Classification: INVALID TEST INVOCATION, not a selector-test failure.** The
+wrapper always passed the whole `_test` directory and then appended any
+provided argument, so the focused invocation reached `test-runner` with two
+test paths. No pytest assertions ran.
+
+Updated `_test/run` to accept zero or one test path: no arguments runs the
+entire `_test` suite; one argument selects that path, resolving relative paths
+from the project root first and then allowing a suite-relative filename. More
+than one argument is rejected by the wrapper with a specific usage error.
+
+**Validation status: RETRY PENDING.** Re-run the original focused command after
+pulling this correction:
+
+```sh
+./_test/run test_pytest_clipboard.py
+```

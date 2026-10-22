@@ -100,8 +100,10 @@ A pure parser has been added in `copy_selector.py`:
 Focused tests were added to `_test/test_pytest_clipboard.py`, covering latest
 run selection, blank lines and multiline evidence, missing boundaries,
 prompt-like output without `P`, and malformed rows. The parser is not yet
-connected to TKM's native copy action or shared executor. Its project-runner
-result is still pending.
+connected to TKM's native copy action or shared executor. The first focused
+runner invocation was rejected before tests ran: `_test/run` passed the suite
+directory plus the requested filename, but `test-runner` accepts one path.
+The wrapper now handles zero or one path and the focused run is pending.
 
 Run from the TKM repository root:
 

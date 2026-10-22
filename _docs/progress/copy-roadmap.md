@@ -134,11 +134,12 @@ required contexts, without state leakage.
 active shell is Zsh 5.9.2 with `ZSH_THEME=focused2-termux`, using the custom
 Oh My Zsh theme at
 `FocusTorn/zsh-customized-overlay/zsh/custom/themes/focused2-termux.zsh-theme`.
-The source initially had no OSC 133 markers. An integration change is now
+The source initially had no OSC 133 markers. The integration change is
 committed at
 https://github.com/FocusTorn/zsh-customized-overlay/commit/9a61d8ce444132b55435ddc3080ee964e80e476c
-but has not yet been loaded and tested in Termux. The `Patch Failed` range
-remains deferred.
+and live prompt/output flags were verified on 2026-10-22; see
+[Runtime Log §15](copy-runtime-log.md#15-live-osc-133-promptoutput-flags-confirmed-2026-10-22).
+The `Patch Failed` range remains deferred.
 
 **Preferred boundary mechanism: OSC 133.** `capture-pane -F` exposes tmux
 line flags (`P` prompt and `O` output); inspect these flags rather than
@@ -196,12 +197,16 @@ https://fossies.org/diffs/tmux/3.7c_vs_3.8/cmd-capture-pane.c-diff.html
    ./_test/run test_pytest_clipboard.py
    ```
 
+   The previous invocation was rejected before tests ran because `_test/run`
+   passed both the suite directory and the extra filename. The wrapper is
+   corrected to pass exactly one path; the focused run remains pending.
+
    Do not integrate the selector into the native copy bindings until the
    focused tests pass.
 
-**Exit condition:** live prompt and output markers are present, and positive
-and negative cases prove the range contract. Do not change TKM's copy
-implementation until the behavior contract and tests are clear.
+**Exit condition:** live prompt/output markers are verified and positive /
+negative selector tests pass. Do not integrate the selector into TKM's copy
+actions before the focused test run succeeds.
 
 ### Gate 5 — Integrate selector into the native copy executor
 
