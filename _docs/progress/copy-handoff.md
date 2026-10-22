@@ -3,7 +3,7 @@
 **Snapshot date:** 2026-10-22  
 **Repository:** FocusTorn/termux-key-manager  
 **Branch:** main  
-**Implementation:** Focused selector tests user-reported green; shared executor and bindings added, runtime verification pending
+**Implementation:** Focused selector and executor contract tests user-reported green; broader regression and production runtime verification pending
 
 ## Mission
 
@@ -110,18 +110,20 @@ and exits copy mode after actions invoked there. Executor tests and production
 binding tests have been added. The first executor test run reported 1 failure
 and 5 passes: the test expected a standalone `-F` argv element, while the
 executor uses the documented combined `-pF` argument. The test assertion has
-been corrected; the focused rerun, broader suite, and production action runtime
-verification remain pending.
+been corrected, and the user has now reported the focused rerun green.
+No test count or full runner transcript was supplied. The broader regression
+run and production action runtime verification remain pending.
 
-Run from the TKM repository root:
+**Next action — run from the TKM repository root:**
 
 ```sh
-./_test/run test_copy_executor.py
+./_test/run
 ```
 
-Then run the broader suite with `./_test/run`. Test root and emacs-style
-`copy-mode`; `copy-mode-vi` remains out of scope. `Patch Failed` remains
-deferred.
+Review the Testmon-selected coverage because tests omitted by Testmon are not
+executed. Then runtime-test the production actions from root and emacs-style
+`copy-mode`, including clipboard contents and mode exit. `copy-mode-vi` remains
+out of scope, and `Patch Failed` selection remains deferred.
 
 ## Constraints
 

@@ -681,3 +681,29 @@ remain pending.
 
 **Next action:** run `./_test/run test_copy_executor.py`; if green, run
 `./_test/run` and continue the required production-binding runtime checks.
+
+
+## 21. Focused executor test rerun reported green (2026-10-22)
+
+**User report:** the corrected focused command completed green after the
+assertion was changed to check the combined `-pF` argument.
+
+```sh
+./_test/run test_copy_executor.py
+```
+
+**Classification: PASS (user-reported).** The user confirmed a green run.
+No test count or full runner transcript was supplied, so neither is inferred.
+The earlier `1 failed, 5 passed` result remains valid evidence for the
+initial, incorrect assertion; this subsequent report supersedes its status as
+the current focused-test result.
+
+This proves the focused executor test run was reported green. It does not
+prove that the production copy actions work in the live Termux/tmux runtime.
+The runner's Testmon-selected mode can omit tests; omitted tests are not
+executed.
+
+**Next action:** run `./_test/run` for the repository runner's broader
+regression pass, review what Testmon selected, then verify the production
+actions from root and emacs-style `copy-mode`, including clipboard contents
+and mode exit. Keep Gate 5 open until those runtime checks pass.
