@@ -641,3 +641,16 @@ terminal clipboard path. That native `-w` path remains untested.
 selector suite was user-reported green before this implementation. The new
 executor tests and updated binding/configuration tests have not yet been run
 against this implementation in Termux. `Patch Failed` remains deferred.
+
+
+## 19. Static integration review correction (2026-10-22)
+
+A post-commit source review found one stale unit-test expectation: the
+`get_tmux_actions` fixture included the new `copy_viewport` action, but its
+expected list omitted it. The expected list is corrected before the new
+executor tests are run. The executor failure-path test also now asserts that
+neither the tmux paste buffer nor Android clipboard is written when the pytest
+selector cannot find its required boundaries.
+
+**Classification: STATIC REVIEW CORRECTION; RUNTIME NOT TESTED.** No new test
+result is inferred. The focused executor suite remains the next runtime gate.

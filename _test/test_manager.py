@@ -505,6 +505,7 @@ class TestTmuxConfig(unittest.TestCase):
                     "copy_mode_exit",
                     "copy_entire_pane",
                     "copy_subset",
+                    "copy_viewport",
                 ],
             )
         finally:

@@ -206,18 +206,30 @@ reported the focused positive/negative selector tests green.
 
 ### Gate 5 — Integrate selector into the native copy executor
 
-**Status:** The pure pytest selector and contract tests are present. Focused test execution is pending; the central native executor and callers remain unimplemented.
+**Status: implementation committed; runtime verification pending.** The
+shared `copy_executor.py` now dispatches whole-pane, viewport, and pytest
+subset copies. Macro bindings call it directly, and generated `helpers.sh`
+no longer contains the legacy `cpy_*` functions. Successful copies update the
+tmux paste buffer and send the same text to `termux-clipboard-set`. The
+selector fails closed when required prompt/progress boundaries are absent.
 
-Before integrating the selector into TKM's action bindings:
+- [x] Add the pure pytest selector and pass its focused tests (user-reported).
+- [x] Add executor contract tests for each action, clipboard output, fail-closed
+  selection, and cancellation from copy mode.
+- [x] Wire the three actions to the shared executor and remove legacy helper
+  implementations from generated runtime code and action definitions.
+- [ ] Run the focused executor tests and fix any failures.
+- [ ] Run the broader suite and verify generated configuration in Termux.
+- [ ] Runtime-test the production actions from root and emacs-style
+  `copy-mode`, including clipboard contents and mode exit.
 
-- Run the new executor tests with the normal project runner and resolve any failures.
-- Verify shared capture and native clipboard mechanics for whole-pane, viewport, and subset actions; fail closed on selector errors.
-- Cover root and emacs-style `copy-mode`, clipboard side effects, cancellation,
-  and action-binding integration before wiring production bindings.
-- Integrate the smallest coherent slice; keep all legacy `cpy_*` helpers out
-  of the target architecture.
+The native tmux `load-buffer -w` clipboard path remains untested; the executor
+uses the already-proven `termux-clipboard-set` endpoint instead. The
+`copy-mode-vi` table remains out of scope, and `Patch Failed` selection is
+deferred.
 
-**Exit condition:** executor tests pass, root and emacs-style `copy-mode` behavior is runtime-verified, and all three actions use the shared executor.
+**Exit condition:** executor and regression tests pass, and the three
+production actions are runtime-verified in both required contexts.
 
 ### Gate 6 — Regression and repository verification
 

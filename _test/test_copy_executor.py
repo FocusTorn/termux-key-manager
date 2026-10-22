@@ -26,7 +26,7 @@ def _commands(calls, prefix):
     return [command for command, _ in calls if command[:len(prefix)] == prefix]
 
 
-def test_copy_entire_pane_uses_history_capture_and_native_clipboard():
+def test_copy_entire_pane_uses_history_capture_and_proven_clipboard():
     calls, fake_run = _mock_tmux("alpha  \nbeta\n\n")
     with patch("copy_executor.subprocess.run", side_effect=fake_run):
         assert copy_executor.execute_copy("copy_entire_pane", "%1") is True
@@ -84,6 +84,7 @@ def test_copy_subset_fails_closed_without_prompt_and_preserves_clipboard():
     with patch("copy_executor.subprocess.run", side_effect=fake_run):
         assert copy_executor.execute_copy("copy_subset", "%3") is False
     assert not _commands(calls, ["tmux", "load-buffer"])
+    assert not _commands(calls, ["termux-clipboard-set"])
     assert _commands(calls, ["tmux", "send-keys"]) == [
         ["tmux", "send-keys", "-t", "%3", "-X", "cancel"]
     ]
