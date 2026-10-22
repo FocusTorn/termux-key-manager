@@ -3,7 +3,7 @@
 **Snapshot date:** 2026-10-22  
 **Repository:** FocusTorn/termux-key-manager  
 **Branch:** main  
-**Implementation:** Pytest selector parser added; native executor integration pending
+**Implementation:** Focused selector tests user-reported green; shared executor and bindings added, runtime verification pending
 
 ## Mission
 
@@ -97,22 +97,25 @@ A pure parser has been added in `copy_selector.py`:
 - Returns `None` on missing boundaries or malformed capture rows. Callers must
   leave the clipboard unchanged on `None`.
 
-Focused tests were added to `_test/test_pytest_clipboard.py`, covering latest
-run selection, blank lines and multiline evidence, missing boundaries,
-prompt-like output without `P`, and malformed rows. The parser is not yet
-connected to TKM's native copy action or shared executor. The first focused
-runner invocation was rejected before tests ran: `_test/run` passed the suite
-directory plus the requested filename, but `test-runner` accepts one path.
-The wrapper now handles zero or one path and the focused run is pending.
+Focused tests in `_test/test_pytest_clipboard.py` cover latest-run selection,
+blank/multiline evidence, missing boundaries, prompt-like output without `P`,
+and malformed rows. The user reported the corrected focused run as green.
+The earlier runner rejection was an invalid invocation, not a test failure.
+
+A shared `copy_executor.py` now serves `copy_entire_pane`, `copy_viewport`,
+and `copy_subset`. It uses tmux capture and `load-buffer -w -` for the native
+clipboard path, leaves the clipboard unchanged when subset boundaries fail,
+and exits copy mode after actions invoked there. Executor tests and production
+binding tests have been added; the new executor's Termux runtime verification
+is pending.
 
 Run from the TKM repository root:
 
 ```sh
-./_test/run test_pytest_clipboard.py
+./_test/run test_copy_executor.py
 ```
 
-After this passes, continue with the shared native copy executor and its
-whole-pane, viewport, and pytest-subset callers. Test root and emacs-style
+Then run the broader suite with `./_test/run`. Test root and emacs-style
 `copy-mode`; `copy-mode-vi` remains out of scope. `Patch Failed` remains
 deferred.
 

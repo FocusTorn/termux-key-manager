@@ -43,8 +43,9 @@ def shell_to_macro(command):
 TMUX_ACTION_SEQUENCES = {
     "copy_mode_exit": "\x1b[5;30012~",
     "copy_entire_pane": "\x1b[5;30013~",
-    "copy_test_result": "\x1b[5;30014~",
+    "copy_subset": "\x1b[5;30014~",
     "clear_terminal": "\x1b[5;30015~",
+    "copy_viewport": "\x1b[5;30016~",
 }
 
 TMUX_ACTION_NATIVE = {
@@ -54,8 +55,9 @@ TMUX_ACTION_NATIVE = {
 
 TMUX_ACTION_COMMANDS = {
     "copy_mode_exit": None,
-    "copy_entire_pane": "bash -c '. ~/.termux/helpers.sh && cpy_all'",
-    "copy_test_result": "bash -c '. ~/.termux/helpers.sh && cpy_test'",
+    "copy_entire_pane": "python $HOME/projects/termux-key-manager/copy_executor.py copy_entire_pane '#{pane_id}'",
+    "copy_subset": "python $HOME/projects/termux-key-manager/copy_executor.py copy_subset '#{pane_id}'",
+    "copy_viewport": "python $HOME/projects/termux-key-manager/copy_executor.py copy_viewport '#{pane_id}'",
     "clear_terminal": {
         "root": "send-keys C-u \\; send-keys -R \\; clear-history \\; send-keys C-l",
         "copy-mode": "send-keys -X cancel \\; send-keys -R \\; clear-history \\; send-keys C-l",

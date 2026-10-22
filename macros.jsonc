@@ -67,7 +67,7 @@
         "CPY_TEST": {
             "display": "🧪",
             "actions": [
-                { "tmux": "copy_test_result" }
+                { "tmux": "copy_subset" }
             ]
         },
 
@@ -75,7 +75,7 @@
             "display": "🗨",
             "actions": [
                 { "shell": "PASTE ENTER" },
-                { "shell": "cpy_all" }
+                { "tmux": "copy_entire_pane" }
             ]
         },
 
@@ -87,8 +87,7 @@
             "popup": {
                 "display": "COPY",
                 "actions": [
-                    { "tmux": "copy_mode_exit" },
-                    { "shell": "cpy" }
+                    { "tmux": "copy_viewport" }
                 ]
             }
         },

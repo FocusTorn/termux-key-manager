@@ -1,7 +1,7 @@
 # Native Tmux Copy Refactor — Roadmap
 
 **Status updated:** 2026-10-22  
-**Implementation status:** Live OSC 133 prompt/output markers are verified; pytest selector parser and contract tests are added. Focused test execution and native executor integration remain pending.
+**Implementation status:** Live OSC 133 markers and focused pytest selector tests are verified. The shared native copy executor and three action bindings are implemented; executor runtime verification remains pending.
 
 ## Objective
 
@@ -60,9 +60,9 @@ configured macros. They prove individual tmux operations only.
 - [x] Prove the isolated action behavior in the `copy-mode` table.
 - [x] Record `copy-mode-vi` as out of scope; no vi-mode proof is required.
 - [x] Define the pytest subset boundary contract and write positive/negative selector tests before implementing the parser.
-- [ ] Run the selector tests through the project's normal `_test/run` harness.
-- [ ] Integrate the selector into the central native copy executor and the three callers.
-- [ ] Remove legacy cpy_* implementation and binding references.
+- [x] Run the selector tests through the project's normal `_test/run` harness (user-reported green on 2026-10-22).
+- [x] Integrate the selector into the central native copy executor and wire all three callers (runtime verification pending).
+- [x] Remove legacy cpy_* implementation and binding references from generated runtime code and action definitions.
 - [ ] Run focused and broader regressions; verify final repository state.
 
 ## Ordered execution plan
@@ -130,7 +130,7 @@ required contexts, without state leakage.
 
 ### Gate 4 — Prove pytest subset and prompt exclusion
 
-**Status: live prompt/output marker proof passed on 2026-10-22; selector contract tests and pure parser are added, but the focused test run remains pending.** The
+**Status: live prompt/output marker proof and focused selector test run passed on 2026-10-22.** The
 active shell is Zsh 5.9.2 with `ZSH_THEME=focused2-termux`, using the custom
 Oh My Zsh theme at
 `FocusTorn/zsh-customized-overlay/zsh/custom/themes/focused2-termux.zsh-theme`.
@@ -191,22 +191,18 @@ https://fossies.org/diffs/tmux/3.7c_vs_3.8/cmd-capture-pane.c-diff.html
    `P`, and malformed capture rows. The parser is not yet wired into TKM's
    copy actions.
 
-6. [ ] Run the focused tests with the normal project runner:
+6. [x] Run the focused tests with the normal project runner (user reported green):
 
    ```sh
    ./_test/run test_pytest_clipboard.py
    ```
 
-   The previous invocation was rejected before tests ran because `_test/run`
-   passed both the suite directory and the extra filename. The wrapper is
-   corrected to pass exactly one path; the focused run remains pending.
+   The first invocation was rejected before tests ran because `_test/run`
+   passed both the suite directory and the extra filename. The wrapper was
+   corrected, and the user subsequently reported the focused run as green.
 
-   Do not integrate the selector into the native copy bindings until the
-   focused tests pass.
-
-**Exit condition:** live prompt/output markers are verified and positive /
-negative selector tests pass. Do not integrate the selector into TKM's copy
-actions before the focused test run succeeds.
+**Exit condition: PASS.** Live prompt/output markers are verified and the user
+reported the focused positive/negative selector tests green.
 
 ### Gate 5 — Integrate selector into the native copy executor
 
@@ -214,15 +210,14 @@ actions before the focused test run succeeds.
 
 Before integrating the selector into TKM's action bindings:
 
-- Run the new selector tests with the normal project runner and resolve any failures.
-- Specify executor behavior for whole-pane and viewport copy, plus selector failure.
+- Run the new executor tests with the normal project runner and resolve any failures.
+- Verify shared capture and native clipboard mechanics for whole-pane, viewport, and subset actions; fail closed on selector errors.
 - Cover root and emacs-style `copy-mode`, clipboard side effects, cancellation,
   and action-binding integration before wiring production bindings.
 - Integrate the smallest coherent slice; keep all legacy `cpy_*` helpers out
   of the target architecture.
 
-**Exit condition:** tests encode the contract, and each implementation slice
-passes its focused tests.
+**Exit condition:** executor tests pass, root and emacs-style `copy-mode` behavior is runtime-verified, and all three actions use the shared executor.
 
 ### Gate 6 — Regression and repository verification
 

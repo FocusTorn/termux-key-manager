@@ -93,24 +93,21 @@ class TestTermuxKeyManager(unittest.TestCase):
         )
         self.assertEqual(
             convert_definition(
-                {"actions": [{"tmux": "copy_test_result"}]}
+                {"actions": [{"tmux": "copy_subset"}]}
             )["macro"],
             "\x1b[5;30014~",
         )
 
     def test_convert_definition_mixed_tmux_and_shell_actions_preserve_order(self):
-        from macros import convert_definition, shell_to_macro
-
         definition = {
             "actions": [
                 {"tmux": "copy_mode_exit"},
-                {"shell": "cpy"},
+                {"shell": "refresh"},
             ]
         }
-
         self.assertEqual(
             convert_definition(definition)["macro"],
-            "\x1b[5;30012~ " + shell_to_macro("cpy"),
+            "\x1b[5;30012~ " + shell_to_macro("refresh"),
         )
 
     def test_convert_definition_shell_then_tmux_actions_preserve_order(self):
@@ -128,30 +125,14 @@ class TestTermuxKeyManager(unittest.TestCase):
             shell_to_macro("clr") + " " + "\x1b[5;30012~",
         )
 
-    def test_convert_definition_cpy_actions_cancel_copy_mode_first(self):
+    def test_convert_definition_copy_actions_use_native_actions(self):
         definition = {
-            "actions": [
-                {"tmux": "copy_mode_exit"},
-                {"shell": "cpy_all"},
-            ],
-            "popup": {
-                "actions": [
-                    {"tmux": "copy_mode_exit"},
-                    {"shell": "cpy"},
-                ],
-            },
+            "actions": [{"tmux": "copy_entire_pane"}],
+            "popup": {"actions": [{"tmux": "copy_viewport"}]},
         }
-
         converted = convert_definition(definition)
-
-        self.assertEqual(
-            converted["macro"],
-            "\x1b[5;30012~ cpy_all ENTER",
-        )
-        self.assertEqual(
-            converted["popup"]["macro"],
-            "\x1b[5;30012~ cpy ENTER",
-        )
+        self.assertEqual(converted["macro"], "\x1b[5;30013~")
+        self.assertEqual(converted["popup"]["macro"], "\x1b[5;30016~")
 
     def test_convert_definition_rejects_unknown_tmux_action(self):
         definition = {
@@ -254,31 +235,19 @@ class TestTermuxKeyManager(unittest.TestCase):
     def test_get_shell_commands_includes_action_shells(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             json_path = os.path.join(tmpdir, "macros.jsonc")
-            data = {
-                "definitions": {
-                    "ACTIONS": {
-                        "actions": [
-                            {"shell": "cpy_all"},
-                            {"tmux": "copy_mode_exit"},
-                        ],
-                        "popup": {
-                            "actions": [
-                                {"shell": "cpy"},
-                            ]
-                        },
-                    }
-                }
-            }
+            data = {"definitions": {"ACTIONS": {
+                "actions": [{"shell": "refresh"}, {"tmux": "copy_entire_pane"}],
+                "popup": {"actions": [{"shell": "edit_execute"}]},
+            }}}
             with open(json_path, "w", encoding="utf-8") as f:
                 json.dump(data, f)
-
             original_json_path = helpers.JSON_PATH
             helpers.JSON_PATH = json_path
             try:
                 cmds = get_shell_commands()
-                self.assertIn("cpy_all", cmds)
-                self.assertIn("cpy", cmds)
-                self.assertNotIn("copy_mode_exit", cmds)
+                self.assertIn("refresh", cmds)
+                self.assertIn("edit_execute", cmds)
+                self.assertNotIn("copy_entire_pane", cmds)
             finally:
                 helpers.JSON_PATH = original_json_path
 
@@ -288,10 +257,10 @@ class TestTermuxKeyManager(unittest.TestCase):
             original_bashrc = helpers.BASHRC_PATH
             helpers.BASHRC_PATH = bashrc_path
             try:
-                update_bashrc(["echo one", "cpy"])
+                update_bashrc(["echo one", "copy_action"])
                 with open(bashrc_path, "r", encoding="utf-8") as f:
                     content = f.read()
-                self.assertIn("export HISTIGNORE='echo one:cpy*'", content)
+                self.assertIn("export HISTIGNORE='echo one:copy_action'", content)
                 self.assertIn("# >>> termux-key-manager history >>>", content)
 
                 update_bashrc(["echo two"])
@@ -302,144 +271,21 @@ class TestTermuxKeyManager(unittest.TestCase):
             finally:
                 helpers.BASHRC_PATH = original_bashrc
 
-    def test_copy_scaffold_filter_removes_prompt_lines(self):
+    def test_generated_helpers_do_not_include_legacy_copy_functions(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             helpers_path = os.path.join(tmpdir, "helpers.sh")
             original_helpers_path = helpers.HELPERS_PATH
             helpers.HELPERS_PATH = helpers_path
             try:
                 generate_helpers()
-
-                script = f"""
-source "{helpers_path}"
-printf '%s\\n' \
-    '~/projects/old $' \
-    '~/projects/old $ cpy' \
-    'REAL OUTPUT LINE 1' \
-    '/data/data/com.termux/files/home $' \
-    '/data/data/com.termux/files/home $ cpy_all' \
-    'REAL OUTPUT LINE 2' \
-    'ordinary $ output' \
-    'another real line' |
-    _tkm_filter_copy_scaffold cpy
-"""
-                result = subprocess.run(
-                    ["bash", "-c", script],
-                    capture_output=True,
-                    text=True,
-                    check=True,
-                )
-
-                self.assertEqual(
-                    result.stdout,
-                    "REAL OUTPUT LINE 1\n"
-                    "/data/data/com.termux/files/home $ cpy_all\n"
-                    "REAL OUTPUT LINE 2\n"
-                    "ordinary $ output\n"
-                    "another real line\n",
-                )
-                self.assertEqual(result.stderr, "")
+                content = Path(helpers_path).read_text(encoding="utf-8")
+                for name in ("cpy()", "cpy_all()", "cpy_test()", "cpy_pytest()"):
+                    self.assertNotIn(name, content)
+                self.assertNotIn("_tkm_filter_copy_scaffold", content)
+                self.assertIn("refresh() {", content)
+                self.assertIn("clr() {", content)
             finally:
                 helpers.HELPERS_PATH = original_helpers_path
-
-    def _run_edit(self, source, spec):
-        with tempfile.TemporaryDirectory() as tmpdir:
-            helpers_path = os.path.join(tmpdir, "helpers.sh")
-            target_path = os.path.join(tmpdir, "target.txt")
-            original_helpers_path = helpers.HELPERS_PATH
-            helpers.HELPERS_PATH = helpers_path
-            try:
-                generate_helpers()
-                with open(target_path, "wb") as f:
-                    f.write(source)
-
-                script = f"""\
-source "{helpers_path}"
-edit_create "{target_path}" <<'EOF'
-{spec}EOF
-edit_execute
-"""
-                return subprocess.run(
-                    ["bash", "-c", script],
-                    capture_output=True,
-                    text=True,
-                ), Path(target_path).read_bytes()
-            finally:
-                helpers.HELPERS_PATH = original_helpers_path
-
-    def test_edit_execute_replaces_unique_match(self):
-        result, content = self._run_edit(
-            b"alpha\nbeta\ngamma\n",
-            "--- old\nbeta\n--- new\nBETA\n",
-        )
-
-        self.assertEqual(result.returncode, 0)
-        self.assertEqual(content, b"alpha\nBETA\ngamma\n")
-
-    def test_edit_execute_preserves_replacement_trailing_newline(self):
-        result, content = self._run_edit(
-            b"alpha\nold line\nnext line\ngamma\n",
-            "--- old\nold line\nnext line\n--- new\nnew line\n",
-        )
-
-        self.assertEqual(result.returncode, 0)
-        self.assertEqual(content, b"alpha\nnew line\ngamma\n")
-
-    def test_edit_execute_rejects_missing_match_without_writing(self):
-        source = b"alpha\nbeta\ngamma\n"
-        result, content = self._run_edit(
-            source,
-            "--- old\nbetaa\n--- new\nBETA\n",
-        )
-
-        self.assertNotEqual(result.returncode, 0)
-        self.assertEqual(content, source)
-        self.assertIn("exact text not found", result.stderr)
-        self.assertIn("possible match at line 2 (89%)", result.stderr)
-
-    def test_edit_execute_rejects_ambiguous_match_without_writing(self):
-        source = b"alpha\nbeta\ngamma\nbeta\n"
-        result, content = self._run_edit(
-            source,
-            "--- old\nbeta\n--- new\nBETA\n",
-        )
-
-        self.assertNotEqual(result.returncode, 0)
-        self.assertEqual(content, source)
-        self.assertIn("exact text occurs 2 times", result.stderr)
-
-    def test_edit_execute_rejects_missing_markers_without_writing(self):
-        source = b"alpha\nbeta\ngamma\n"
-        result, content = self._run_edit(
-            source,
-            "beta\n--- new\nBETA\n",
-        )
-
-        self.assertNotEqual(result.returncode, 0)
-        self.assertEqual(content, source)
-        self.assertIn("requires --- old and --- new", result.stderr)
-
-    def test_edit_execute_rejects_old_marker_not_first_without_writing(self):
-        source = b"alpha\nbeta\ngamma\n"
-        result, content = self._run_edit(
-            source,
-            "prefix\n--- old\nbeta\n--- new\nBETA\n",
-        )
-
-        self.assertNotEqual(result.returncode, 0)
-        self.assertEqual(content, source)
-        self.assertIn("must begin with --- old", result.stderr)
-
-    def test_edit_execute_rejects_empty_old_text_without_writing(self):
-        source = b"alpha\nbeta\ngamma\n"
-        result, content = self._run_edit(
-            source,
-            "--- old\n--- new\nBETA\n",
-        )
-
-        self.assertNotEqual(result.returncode, 0)
-        self.assertEqual(content, source)
-        self.assertIn("old text is empty", result.stderr)
 
     def test_generate_helpers(self):
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -486,17 +332,10 @@ edit_execute
                     'exec tmux new-session -c "$HOME"',
                     refresh_content,
                 )
-                self.assertIn('_tkm_filter_copy_scaffold() {', content)
-                self.assertIn('awk -v command="$command"', content)
-                self.assertIn('marker = index(line, " $")', content)
-                self.assertIn('prefix = substr(line, 1, marker - 1)', content)
-                self.assertIn('suffix = substr(line, marker)', content)
-                self.assertIn('suffix == " $ " command', content)
-                self.assertIn("tmux capture-pane -pJ |", content)
-                self.assertIn("tmux capture-pane -pJ -S - |", content)
-                self.assertIn("sed 's/[[:space:]]*$//' |", content)
-                self.assertIn("tmux load-buffer -w -", content)
-                self.assertIn("termux-clipboard-set < \"$PREFIX/tmp/cpy_pytest.out\"", content)
+                self.assertNotIn("cpy_all()", content)
+                self.assertNotIn("cpy_test()", content)
+                self.assertNotIn("cpy_pytest()", content)
+                self.assertNotIn("termux-clipboard-set", content)
             finally:
                 helpers.JSON_PATH = orig_json
                 helpers.HELPERS_PATH = orig_helpers
@@ -639,7 +478,7 @@ class TestTmuxConfig(unittest.TestCase):
                             },
                             "CPY_TEST": {
                                 "actions": [
-                                    {"tmux": "copy_test_result"},
+                                    {"tmux": "copy_subset"},
                                 ]
                             },
                             "CPY_ALL": {
@@ -648,8 +487,7 @@ class TestTmuxConfig(unittest.TestCase):
                                 ],
                                 "popup": {
                                     "actions": [
-                                        {"tmux": "copy_mode_exit"},
-                                        {"shell": "cpy"},
+                                        {"tmux": "copy_viewport"},
                                     ]
                                 },
                             },
@@ -666,7 +504,7 @@ class TestTmuxConfig(unittest.TestCase):
                 [
                     "copy_mode_exit",
                     "copy_entire_pane",
-                    "copy_test_result",
+                    "copy_subset",
                 ],
             )
         finally:
@@ -713,21 +551,25 @@ class TestTmuxConfig(unittest.TestCase):
             config,
         )
 
-    def test_tmux_config_copy_helpers_bind_in_root_and_copy_modes(self):
+    def test_tmux_config_copy_executor_binds_in_root_and_copy_modes(self):
         from tmux import build_tmux_config
-
         config = build_tmux_config([
-            "copy_mode_exit",
-            "copy_entire_pane",
-            "copy_test_result",
+            "copy_mode_exit", "copy_entire_pane", "copy_subset", "copy_viewport",
         ])
-
         self.assertIn(
-            'bind-key -n User1 run-shell "bash -c \'. ~/.termux/helpers.sh && cpy_all\'"',
+            'bind-key -n User1 run-shell "python $HOME/projects/termux-key-manager/copy_executor.py copy_entire_pane \'#{pane_id}\'"',
             config,
         )
         self.assertIn(
-            'bind-key -n User2 run-shell "bash -c \'. ~/.termux/helpers.sh && cpy_test\'"',
+            'bind-key -n User2 run-shell "python $HOME/projects/termux-key-manager/copy_executor.py copy_subset \'#{pane_id}\'"',
+            config,
+        )
+        self.assertIn(
+            'bind-key -T copy-mode User3 run-shell "python $HOME/projects/termux-key-manager/copy_executor.py copy_viewport \'#{pane_id}\'"',
+            config,
+        )
+        self.assertIn(
+            'bind-key -T copy-mode User1 run-shell "python $HOME/projects/termux-key-manager/copy_executor.py copy_entire_pane \'#{pane_id}\'"',
             config,
         )
 
@@ -807,105 +649,35 @@ class TestTmuxConfig(unittest.TestCase):
 
     def test_tmux_config_clears_stale_user_keys_and_bindings(self):
         from tmux import build_tmux_config
-
         config = build_tmux_config([
-            "copy_mode_exit",
-            "copy_entire_pane",
-            "copy_test_result",
+            "copy_mode_exit", "copy_entire_pane", "copy_subset", "copy_viewport",
         ])
-
         for index in range(6):
-            self.assertIn(
-                f"set -s -u user-keys[{index}]",
-                config,
-            )
-
-        for user_key in [
-            "User0",
-            "User1",
-            "User2",
-            "User3",
-            "User4",
-            "User5",
-        ]:
-            self.assertIn(
-                f"unbind-key {user_key}",
-                config,
-            )
-            self.assertIn(
-                f"unbind-key -T copy-mode {user_key}",
-                config,
-            )
-            self.assertIn(
-                f"unbind-key -T copy-mode-vi {user_key}",
-                config,
-            )
-
-        self.assertIn(
-            'set -s user-keys[0] "\\e[5;30012~"',
-            config,
-        )
-        self.assertIn(
-            'set -s user-keys[1] "\\e[5;30013~"',
-            config,
-        )
-        self.assertIn(
-            'set -s user-keys[2] "\\e[5;30014~"',
-            config,
-        )
-
-        self.assertNotIn(
-            'set -s user-keys[3] "\\e[5;30012~"',
-            config,
-        )
-        self.assertNotIn(
-            "bind-key -T copy-mode User3 send-keys -X cancel",
-            config,
-        )
+            self.assertIn(f"set -s -u user-keys[{index}]", config)
+        for user_key in [f"User{i}" for i in range(6)]:
+            self.assertIn(f"unbind-key {user_key}", config)
+            self.assertIn(f"unbind-key -T copy-mode {user_key}", config)
+            self.assertIn(f"unbind-key -T copy-mode-vi {user_key}", config)
+        self.assertIn('set -s user-keys[1] "\\e[5;30013~"', config)
+        self.assertIn('set -s user-keys[2] "\\e[5;30014~"', config)
+        self.assertIn('set -s user-keys[3] "\\e[5;30016~"', config)
 
     def test_tmux_config_for_copy_actions(self):
         from tmux import build_tmux_config
-
         config = build_tmux_config([
-            "copy_mode_exit",
-            "copy_entire_pane",
-            "copy_test_result",
+            "copy_mode_exit", "copy_entire_pane", "copy_subset", "copy_viewport",
         ])
-
+        for table in ("-n", "-T copy-mode", "-T copy-mode-vi"):
+            self.assertIn(
+                f'bind-key {table} User1 run-shell "python $HOME/projects/termux-key-manager/copy_executor.py copy_entire_pane \'#{pane_id}\'"',
+                config,
+            )
         self.assertIn(
-            'set -s user-keys[0] "\\e[5;30012~"',
+            'bind-key -n User2 run-shell "python $HOME/projects/termux-key-manager/copy_executor.py copy_subset \'#{pane_id}\'"',
             config,
         )
         self.assertIn(
-            'bind-key -T copy-mode User0 send-keys -X cancel',
-            config,
-        )
-        self.assertIn(
-            'bind-key -T copy-mode-vi User0 send-keys -X cancel',
-            config,
-        )
-        self.assertIn(
-            'set -s user-keys[1] "\\e[5;30013~"',
-            config,
-        )
-        self.assertIn(
-            'bind-key -T copy-mode User1 run-shell "bash -c \'. ~/.termux/helpers.sh && cpy_all\'"',
-            config,
-        )
-        self.assertIn(
-            'bind-key -T copy-mode-vi User1 run-shell "bash -c \'. ~/.termux/helpers.sh && cpy_all\'"',
-            config,
-        )
-        self.assertIn(
-            'set -s user-keys[2] "\\e[5;30014~"',
-            config,
-        )
-        self.assertIn(
-            'bind-key -T copy-mode User2 run-shell "bash -c \'. ~/.termux/helpers.sh && cpy_test\'"',
-            config,
-        )
-        self.assertIn(
-            'bind-key -T copy-mode-vi User2 run-shell "bash -c \'. ~/.termux/helpers.sh && cpy_test\'"',
+            'bind-key -T copy-mode User3 run-shell "python $HOME/projects/termux-key-manager/copy_executor.py copy_viewport \'#{pane_id}\'"',
             config,
         )
 

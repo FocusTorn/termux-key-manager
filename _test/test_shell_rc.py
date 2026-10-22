@@ -16,14 +16,14 @@ class TestShellRcUpdates(unittest.TestCase):
             original = helpers.ZSHRC_PATH
             helpers.ZSHRC_PATH = zshrc
             try:
-                helpers.update_zshrc(["echo one", "cpy"])
-                helpers.update_zshrc(["echo two", "cpy"])
+                helpers.update_zshrc(["echo one", "copy_action"])
+                helpers.update_zshrc(["echo two", "copy_action"])
 
                 with open(zshrc, "r", encoding="utf-8") as stream:
                     content = stream.read()
 
                 self.assertTrue(content.startswith("before\n"))
-                self.assertIn("HISTORY_IGNORE='(echo two|cpy*)'", content)
+                self.assertIn("HISTORY_IGNORE='(echo two|copy_action)'", content)
                 self.assertNotIn("HISTORY_IGNORE=(", content.replace(
                     "HISTORY_IGNORE='(", ""
                 ))

@@ -30,7 +30,7 @@ from the Termux environment. Source-level analysis is recorded in
 | Updated `focused2-termux` OSC 133 integration | **PASS** | User's 2026-10-22 capture showed `PX` on the prompt top-rule row and `O` on the output probe row |
 | Direct OSC 133 marker handling in tmux 3.8 | **PASS** | Direct A/B/C sentinels appeared with prefixes `P`, `-`, and `O` |
 | Interpret tmux 3.8 `W`/`X` flags | **PASS** | `X` appeared on Unicode prompt rows and `WX` on a wrapped line; tmux 3.8 maps `W` to wrapped and `X` to extended cells |
-| Pytest semantic selector | **CODE ADDED; RUN PENDING** | `copy_selector.py` and focused positive/negative contract tests cover the tmux-flag boundary rules; the project runner has not been run yet |
+| Pytest semantic selector | **PASS (user-reported)** | The user reported the focused `test_pytest_clipboard.py` run as green on 2026-10-22 |
 | Missing-marker and failure behavior | **TESTS ADDED; RUN PENDING** | Tests cover absent prompt, absent valid progress before the prompt, malformed rows, and prompt-like output without a `P` flag |
 | Native tmux terminal clipboard path without an external command | **NOT TESTED** | The passing clipboard tests used `termux-clipboard-set` as the pipe command |
 
@@ -602,3 +602,38 @@ pulling this correction:
 ```sh
 ./_test/run test_pytest_clipboard.py
 ```
+
+
+## 17. Focused pytest selector tests passed (2026-10-22)
+
+The user reported the corrected command's result as **green** after running:
+
+```sh
+./_test/run test_pytest_clipboard.py
+```
+
+**Classification: PASS, user-reported.** The focused selector test gate is treated
+as passed. No test count or detailed runner transcript was supplied, so none is
+inferred. The earlier `test-runner: only one test path is allowed` result remains
+classified as an invalid invocation, not a test failure.
+
+## 18. Shared native copy executor added (2026-10-22)
+
+Added `copy_executor.py` as the single execution path for `copy_entire_pane`,
+`copy_viewport`, and `copy_subset`. The executor uses `capture-pane` for the
+requested range and `load-buffer -w -` for tmux's native clipboard path. The
+pytest subset path consumes `capture-pane -pF -S -` and fails closed when its
+prompt/progress boundaries are missing, leaving the clipboard unchanged. When
+the action starts in copy mode, the executor cancels that mode after the copy
+attempt to avoid state leakage.
+
+The macro definitions now dispatch directly to the executor; the generated
+`helpers.sh` no longer contains the legacy `cpy`, `cpy_all`, `cpy_test`,
+or `cpy_pytest` implementations. `copy_viewport` is wired to the existing
+COPY popup, `copy_entire_pane` to CPY_ALL/CPY_PASTE, and `copy_subset` to
+CPY_TEST.
+
+**Verification status: SOURCE AND CONTRACT TESTS ADDED; RUNTIME PENDING.** The
+selector suite was user-reported green before this implementation. The new
+executor tests and updated binding/configuration tests have not yet been run
+against this implementation in Termux. `Patch Failed` remains deferred.

@@ -14,19 +14,6 @@ BASHRC_START = "# >>> termux-key-manager history >>>"
 BASHRC_END = "# <<< termux-key-manager history <<<"
 
 
-def trim_pytest_output(text):
-    lines = text.splitlines(keepends=True)
-
-    for index in range(len(lines) - 1, -1, -1):
-        stripped = lines[index].strip()
-
-        if stripped.endswith("[100%]"):
-            progress = stripped[: -len("[100%]")].rstrip()
-
-            if progress and all(char in ".FEsxXfPp-" for char in progress):
-                return "".join(lines[index:])
-
-    return text
 
 
 def get_shell_commands():
@@ -96,7 +83,7 @@ def _replace_managed_block(path, block, create_if_missing=True):
 def update_bashrc(shell_commands):
 
     histignore = ":".join(
-        "cpy*" if command == "cpy" else command for command in shell_commands
+        command for command in shell_commands
     )
 
     block = f"""{BASHRC_START}
@@ -120,7 +107,7 @@ def update_zshrc(shell_commands):
         return
 
     patterns = "|".join(
-        "cpy*" if command == "cpy" else command
+        command
         for command in shell_commands
     )
 
@@ -144,7 +131,7 @@ def generate_helpers():
     shell_commands = get_shell_commands()
 
     histignore = ":".join(
-        "cpy*" if command == "cpy" else command for command in shell_commands
+        command for command in shell_commands
     )
 
     template = os.path.join(
