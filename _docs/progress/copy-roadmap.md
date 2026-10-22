@@ -1,7 +1,7 @@
 # Native Tmux Copy Refactor — Roadmap
 
-**Status updated:** 2026-10-17  
-**Implementation status:** Not started; Gate 3 is complete for the agreed scope and semantic-boundary work is next.
+**Status updated:** 2026-10-22  
+**Implementation status:** Live OSC 133 prompt/output markers are verified; pytest selector parser and contract tests are added. Focused test execution and native executor integration remain pending.
 
 ## Objective
 
@@ -59,9 +59,9 @@ configured macros. They prove individual tmux operations only.
 - [x] Prove the isolated root binding's selection-to-clipboard path end-to-end.
 - [x] Prove the isolated action behavior in the `copy-mode` table.
 - [x] Record `copy-mode-vi` as out of scope; no vi-mode proof is required.
-- [ ] Define and test semantic subset discovery and prompt exclusion.
-- [ ] Write behavior tests before changing implementation.
-- [ ] Implement the central native copy executor and the three callers.
+- [x] Define the pytest subset boundary contract and write positive/negative selector tests before implementing the parser.
+- [ ] Run the selector tests through the project's normal `_test/run` harness.
+- [ ] Integrate the selector into the central native copy executor and the three callers.
 - [ ] Remove legacy cpy_* implementation and binding references.
 - [ ] Run focused and broader regressions; verify final repository state.
 
@@ -130,7 +130,7 @@ required contexts, without state leakage.
 
 ### Gate 4 — Prove pytest subset and prompt exclusion
 
-**Status: theme integration committed; Termux runtime proof pending.** The
+**Status: live prompt/output marker proof passed on 2026-10-22; selector contract tests and pure parser are added, but the focused test run remains pending.** The
 active shell is Zsh 5.9.2 with `ZSH_THEME=focused2-termux`, using the custom
 Oh My Zsh theme at
 `FocusTorn/zsh-customized-overlay/zsh/custom/themes/focused2-termux.zsh-theme`.
@@ -174,48 +174,47 @@ https://fossies.org/diffs/tmux/3.7c_vs_3.8/cmd-capture-pane.c-diff.html
    `preexec`, and emits D with the command status in a first-position
    `precmd` hook.
 
-4. [ ] Sync the committed theme from the overlay repository using the UTR
-   G suite, then reload the login shell:
+4. [x] Sync and reload the shell, then inspect live prompt/output flags.
+
+   The user ran the sync/reload sequence and the probe. The capture showed
+   `PX` on the prompt top-rule row and `O TKM_OSC133_OUTPUT_PROBE` on the
+   command output row. This passes live marker integration. It does not prove
+   pytest semantic selection or production action behavior.
+
+   The detailed dated evidence is in
+   [Runtime Log §15](copy-runtime-log.md#15-live-osc-133-promptoutput-flags-confirmed-2026-10-22).
+
+5. [x] Add selector behavior tests and a pure parser for the agreed
+   range contract. The tests cover latest-run selection, missing prompt and
+   progress boundaries, blank/multiline evidence, prompt-like output without
+   `P`, and malformed capture rows. The parser is not yet wired into TKM's
+   copy actions.
+
+6. [ ] Run the focused tests with the normal project runner:
 
    ```sh
-   cd "$HOME/projects/_universal-termux-resources" && g l || exit
-   cd "$HOME/projects/zsh-customized-overlay" && g l || exit
-   exec zsh -l
+   ./_test/run test_pytest_clipboard.py
    ```
 
-   After the new shell opens, run:
-
-   ```sh
-   printf '%s\n' 'TKM_OSC133_OUTPUT_PROBE'
-   tmux capture-pane -pF -S - | tail -n 40 | sed -n 'l'
-   ```
-
-   Expected: the current prompt's top rule row is flagged `P`, and the
-   probe output row is flagged `O`. Keep raw output if either marker is
-   missing; don't assume a source change proves runtime behavior.
-
-5. [ ] With both markers confirmed in the live shell, cover repeated/missing
-   progress markers, missing prompt markers, blank lines, multiline output,
-   and safe failure.
-6. [ ] Add selector behavior tests to the existing
-   `_test/test_pytest_clipboard.py` and use the normal project runner; do
-   not create an isolated pytest harness.
+   Do not integrate the selector into the native copy bindings until the
+   focused tests pass.
 
 **Exit condition:** live prompt and output markers are present, and positive
 and negative cases prove the range contract. Do not change TKM's copy
 implementation until the behavior contract and tests are clear.
 
-### Gate 5 — Write behavior tests and implement
+### Gate 5 — Integrate selector into the native copy executor
 
-Before modifying TKM source:
+**Status:** The pure pytest selector and contract tests are present. Focused test execution is pending; the central native executor and callers remain unimplemented.
 
-- Define observable contracts for entire-pane, viewport, and each subset.
-- Cover success, failure, boundaries, mode state, clipboard side effects,
-  cancellation, and integration with the action-binding layer.
-- Write the tests first and run the new/changed tests directly.
-- Implement the smallest coherent slice; correct the test or implementation
-  based on the observed failure.
-- Keep the legacy helpers out of the target architecture.
+Before integrating the selector into TKM's action bindings:
+
+- Run the new selector tests with the normal project runner and resolve any failures.
+- Specify executor behavior for whole-pane and viewport copy, plus selector failure.
+- Cover root and emacs-style `copy-mode`, clipboard side effects, cancellation,
+  and action-binding integration before wiring production bindings.
+- Integrate the smallest coherent slice; keep all legacy `cpy_*` helpers out
+  of the target architecture.
 
 **Exit condition:** tests encode the contract, and each implementation slice
 passes its focused tests.

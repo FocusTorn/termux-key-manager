@@ -1,9 +1,9 @@
 # Native Tmux Copy Refactor — Handoff
 
-**Snapshot date:** 2026-10-17  
+**Snapshot date:** 2026-10-22  
 **Repository:** FocusTorn/termux-key-manager  
 **Branch:** main  
-**Implementation:** Not started
+**Implementation:** Pytest selector parser added; native executor integration pending
 
 ## Mission
 
@@ -46,10 +46,10 @@ implementation.
 
 These are test bindings and manually selected ranges, not a completed TKM
 implementation. Root and `copy-mode` have passed. `copy-mode-vi` is explicitly
-out of scope by the 2026-10-17 decision below; actual TKM binding integration
-and semantic boundary discovery remain untested. Source-level research found
-a tmux 3.7c prompt-line flag candidate (`capture-pane -F`), but its availability
-in the target shell has not been runtime verified.
+out of scope by the 2026-10-17 decision below. Live OSC 133 integration was
+confirmed on 2026-10-22: the user's capture showed `PX` on the prompt top-rule
+row and `O` on `TKM_OSC133_OUTPUT_PROBE`. This confirms the flag path in the
+target shell, not semantic selection or production action integration.
 
 ## Most recent correction
 
@@ -85,44 +85,34 @@ where the interactive trial occurred. The later `copy-mode` trial also passed;
 
 ## Immediate next action
 
-The active prompt configuration is now identified: Zsh 5.9.2,
-`ZSH_THEME=focused2-termux`, with Oh My Zsh hooks and no Starship,
-Oh My Posh, or Powerlevel10k. The live theme source was
-`FocusTorn/zsh-customized-overlay/zsh/custom/themes/focused2-termux.zsh-theme`;
-it built the multiline prompt but emitted no OSC 133 markers.
+The live OSC 133 proof passed on 2026-10-22. The user's capture included
+`PX` on the prompt top-rule row and `O TKM_OSC133_OUTPUT_PROBE` on the output
+row. The `X` and `W` flags describe extended cells and wrapping; they are not
+prompt boundaries.
 
-A theme integration patch is committed at
-https://github.com/FocusTorn/zsh-customized-overlay/commit/9a61d8ce444132b55435ddc3080ee964e80e476c:
-- OSC 133 A/B around the existing prompt string (zero-width wrappers);
-- C from `preexec` before command output;
-- D plus exit status from a first-position `precmd` hook.
+A pure parser has been added in `copy_selector.py`:
+- Finds the latest valid pytest progress row ending in `[100%]` before the
+  final prompt-flagged row.
+- Removes tmux flag prefixes while preserving selected text and line endings.
+- Returns `None` on missing boundaries or malformed capture rows. Callers must
+  leave the clipboard unchanged on `None`.
 
-This source change has not yet been runtime-verified. Sync it with the UTR G
-suite and reload zsh:
+Focused tests were added to `_test/test_pytest_clipboard.py`, covering latest
+run selection, blank lines and multiline evidence, missing boundaries,
+prompt-like output without `P`, and malformed rows. The parser is not yet
+connected to TKM's native copy action or shared executor. Its project-runner
+result is still pending.
 
-```sh
-cd "$HOME/projects/_universal-termux-resources" && g l || exit
-cd "$HOME/projects/zsh-customized-overlay" && g l || exit
-exec zsh -l
-```
-
-Then run the probe in the reloaded shell:
+Run from the TKM repository root:
 
 ```sh
-printf '%s\n' 'TKM_OSC133_OUTPUT_PROBE'
-tmux capture-pane -pF -S - | tail -n 40 | sed -n 'l'
+./_test/run test_pytest_clipboard.py
 ```
 
-Expected: the current prompt's top rule row carries `P`, and
-`TKM_OSC133_OUTPUT_PROBE` is on an `O`-flagged row. If either is missing,
-paste the raw output and don't proceed to the pytest selector implementation.
-
-The pytest subset contract remains: start at the latest valid progress line
-ending in `[100%]`, include that line, and stop immediately before the final
-line flagged `P`. Preserve intervening blank/multiline output and fail closed
-if either boundary is missing. The `Patch Failed` selector remains deferred.
-Use existing `_test/test_pytest_clipboard.py` with the normal project runner
-once live markers are confirmed.
+After this passes, continue with the shared native copy executor and its
+whole-pane, viewport, and pytest-subset callers. Test root and emacs-style
+`copy-mode`; `copy-mode-vi` remains out of scope. `Patch Failed` remains
+deferred.
 
 ## Constraints
 

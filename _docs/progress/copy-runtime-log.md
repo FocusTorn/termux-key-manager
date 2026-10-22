@@ -27,11 +27,11 @@ from the Termux environment. Source-level analysis is recorded in
 | Invocation from the `copy-mode-vi` table | **NOT TESTED** | Explicitly excluded from the current acceptance scope by the 2026-10-17 scope decision; no vi-mode trial will be run |
 | Exclude a real interactive shell prompt | **NOT TESTED** | The subset test used a printed marker, not a live shell prompt |
 | Automatic prompt flag before theme update | **FAIL (observed)** | Live capture row `X ~ ❯ tkm` had no `P`; see Sections 13–14 |
-| Updated `focused2-termux` OSC 133 integration | **NOT TESTED** | Theme patch committed as `9a61d8c`; the updated prompt and command flags have not yet been observed in Termux |
+| Updated `focused2-termux` OSC 133 integration | **PASS** | User's 2026-10-22 capture showed `PX` on the prompt top-rule row and `O` on the output probe row |
 | Direct OSC 133 marker handling in tmux 3.8 | **PASS** | Direct A/B/C sentinels appeared with prefixes `P`, `-`, and `O` |
 | Interpret tmux 3.8 `W`/`X` flags | **PASS** | `X` appeared on Unicode prompt rows and `WX` on a wrapped line; tmux 3.8 maps `W` to wrapped and `X` to extended cells |
-| Locate pytest or `Patch Failed` semantic boundaries | **NOT TESTED** | The test selected a known line range rather than discovering markers |
-| Missing-marker and failure behavior | **NOT TESTED** | No negative semantic-selector test was run |
+| Pytest semantic selector | **CODE ADDED; RUN PENDING** | `copy_selector.py` and focused positive/negative contract tests cover the tmux-flag boundary rules; the project runner has not been run yet |
+| Missing-marker and failure behavior | **TESTS ADDED; RUN PENDING** | Tests cover absent prompt, absent valid progress before the prompt, malformed rows, and prompt-like output without a `P` flag |
 | Native tmux terminal clipboard path without an external command | **NOT TESTED** | The passing clipboard tests used `termux-clipboard-set` as the pipe command |
 
 ## 1. Clipboard utility sanity check
@@ -527,3 +527,46 @@ Expected evidence: the current prompt's top rule row carries a `P` flag, and
 also have `W`; that is independent of the prompt/output flags. If either
 expected marker is missing, preserve the complete capture and diagnose before
 implementing the TKM subset selector.
+
+
+## 15. Live OSC 133 prompt/output flags confirmed (2026-10-22)
+
+**Command run by the user:**
+
+```sh
+printf '%s\n' 'TKM_OSC133_OUTPUT_PROBE'; tmux capture-pane -pF -S - | tail -n 40 | sed -n 'l'
+```
+
+**Observed flag evidence:**
+
+```text
+PX <prompt top-rule row>
+X 0931.58 | zco ... main | ✔
+WX <wrapped command row>
+O TKM_OSC133_OUTPUT_PROBE
+```
+
+**Result: PASS for live shell integration.** The `P` flag appears on the
+interactive prompt's top-rule row; `X` identifies extended cells, and `W`
+identifies a wrapped row. The probe output carries `O`. This confirms that
+the updated `focused2-termux` theme and tmux's `capture-pane -F` metadata
+work together in the live Termux session.
+
+This verifies the prerequisite marker path, not the selector's behavior on a
+completed pytest run and not the production TKM action binding.
+
+**Selector slice added:** `copy_selector.select_pytest_subset` reads these
+flagged capture rows, selects the latest valid pytest progress line before the
+last `P` row, removes each row's flag prefix, and preserves selected text
+and line endings. It returns `None` when either boundary is missing or a
+capture row is malformed, so the caller can leave the clipboard untouched.
+Focused tests were added to `_test/test_pytest_clipboard.py` for repeated
+runs, missing boundaries, blank and multiline output, prompt-like output
+without `P`, and malformed rows.
+
+**Validation status: TEST RUN PENDING.** Run the test through the project's
+normal runner before wiring the selector into TKM's native copy actions:
+
+```sh
+./_test/run test_pytest_clipboard.py
+```
