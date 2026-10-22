@@ -3,12 +3,10 @@
 [run]
 branch = True
 core = pytrace
-omit =
-    _test/*
+omit = _test/*
 
 [report]
-omit =
-    _test/*
+omit = _test/*
 
 ; Regexes for lines to exclude from consideration
 exclude_also =
