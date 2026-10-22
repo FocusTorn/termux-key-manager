@@ -67,7 +67,7 @@ def test_copy_subset_selects_latest_pytest_range_and_uses_shared_clipboard():
     with patch("copy_executor.subprocess.run", side_effect=fake_run):
         assert copy_executor.execute_copy("copy_subset", "%2") is True
     capture = _commands(calls, ["tmux", "capture-pane"])[0]
-    assert "-F" in capture and "-S" in capture
+    assert "-pF" in capture and "-S" in capture
     clipboard = [kwargs for command, kwargs in calls if command == ["termux-clipboard-set"]]
     buffer_writes = [kwargs for command, kwargs in calls if command == ["tmux", "load-buffer", "-"]]
     assert buffer_writes[0]["input"] == clipboard[0]["input"]

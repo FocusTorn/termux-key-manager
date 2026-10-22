@@ -107,8 +107,11 @@ and `copy_subset`. It uses tmux capture, preserves the tmux paste buffer with `l
 uses the proven `termux-clipboard-set` endpoint. It leaves the clipboard
 unchanged when subset boundaries fail,
 and exits copy mode after actions invoked there. Executor tests and production
-binding tests have been added; the new executor's Termux runtime verification
-is pending.
+binding tests have been added. The first executor test run reported 1 failure
+and 5 passes: the test expected a standalone `-F` argv element, while the
+executor uses the documented combined `-pF` argument. The test assertion has
+been corrected; the focused rerun, broader suite, and production action runtime
+verification remain pending.
 
 Run from the TKM repository root:
 

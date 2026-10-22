@@ -1,7 +1,7 @@
 # Native Tmux Copy Refactor — Roadmap
 
 **Status updated:** 2026-10-22  
-**Implementation status:** Live OSC 133 markers and focused pytest selector tests are verified. The shared native copy executor and three action bindings are implemented; executor runtime verification remains pending.
+**Implementation status:** Live OSC 133 markers and focused pytest selector tests are verified. The shared native copy executor and three action bindings are implemented; executor runtime verification remains pending. The first focused executor run returned 1 failure and 5 passes because a test expected a standalone `-F` argument instead of the documented combined `-pF`; the assertion has been corrected, and rerun is pending.
 
 ## Objective
 
@@ -213,12 +213,14 @@ no longer contains the legacy `cpy_*` functions. Successful copies update the
 tmux paste buffer and send the same text to `termux-clipboard-set`. The
 selector fails closed when required prompt/progress boundaries are absent.
 
+The first user-run `./_test/run test_copy_executor.py` reported **1 failed, 5 passed**. The sole failure was the test checking for a standalone `-F` argv element while the executor sends the documented combined `-pF` option. The assertion is corrected, but the rerun is still pending; see [Runtime Log §20](copy-runtime-log.md#20-executor-focused-test-run-exposed-a-capture-flag-assertion-mismatch-2026-10-22).
+
 - [x] Add the pure pytest selector and pass its focused tests (user-reported).
 - [x] Add executor contract tests for each action, clipboard output, fail-closed
   selection, and cancellation from copy mode.
 - [x] Wire the three actions to the shared executor and remove legacy helper
   implementations from generated runtime code and action definitions.
-- [ ] Run the focused executor tests and fix any failures.
+- [ ] Re-run the focused executor tests after correcting the combined `-pF` assertion.
 - [ ] Run the broader suite and verify generated configuration in Termux.
 - [ ] Runtime-test the production actions from root and emacs-style
   `copy-mode`, including clipboard contents and mode exit.

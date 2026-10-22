@@ -1,7 +1,7 @@
 # Copy Runtime Progress Log
 
 **Started:** 2026-10-16  
-**Updated:** 2026-10-17  
+**Updated:** 2026-10-22  
 **Purpose:** Record dated runtime evidence, failures and inconclusive trials, and test-harness corrections while evaluating replacement of TKM's legacy `cpy_*` shell helpers with tmux copy-mode actions.
 
 This document records only behavior demonstrated by the test outputs returned
@@ -654,3 +654,30 @@ selector cannot find its required boundaries.
 
 **Classification: STATIC REVIEW CORRECTION; RUNTIME NOT TESTED.** No new test
 result is inferred. The focused executor suite remains the next runtime gate.
+
+
+## 20. Executor focused test run exposed a capture-flag assertion mismatch (2026-10-22)
+
+**User-run command:**
+
+```sh
+./_test/run test_copy_executor.py
+```
+
+**Observed result:** 1 failed, 5 passed. The failure was in
+`test_copy_subset_selects_latest_pytest_range_and_uses_shared_clipboard`:
+the assertion expected a standalone `-F` element, but the captured argv
+contains `-pF` as one argument.
+
+**Classification: FAIL (test assertion mismatch).** The executor invokes
+`capture-pane -pF -S -`, matching the roadmap's documented command. The
+test uses a mocked tmux process, so this failure does not show that the live
+tmux operation or copy executor runtime is broken.
+
+The assertion is now aligned to check `-pF` instead of a standalone `-F`.
+That source correction has not yet been re-run. Focused executor verification,
+the broader regression suite, and production action runtime verification
+remain pending.
+
+**Next action:** run `./_test/run test_copy_executor.py`; if green, run
+`./_test/run` and continue the required production-binding runtime checks.
