@@ -7,7 +7,7 @@ readonly suite_directory="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 readonly project_root="$(dirname -- "$suite_directory")"
 readonly test_runner="$HOME/bin/test-runner"
 
-# Relative paths are resolved from the project root; absolute paths stay absolute.
+# Source paths are resolved from the project root; absolute paths stay absolute.
 source_dir_relative=''
 
 runner_args=(--working-dir "$project_root")
@@ -25,7 +25,7 @@ if [[ -n "$source_dir_relative" ]]; then
 fi
 
 if (( $# > 1 )); then
-    printf '_test/run: expected zero or one test path, got %s arguments\\n' "$#" >&2
+    printf '_test/run: expected zero or one test path, got %s arguments\n' "$#" >&2
     exit 2
 fi
 
@@ -34,7 +34,7 @@ if (( $# == 0 )); then
 else
     requested_test_path="$1"
     if [[ -z "$requested_test_path" ]]; then
-        printf '_test/run: test path must not be empty\\n' >&2
+        printf '_test/run: test path must not be empty\n' >&2
         exit 2
     elif [[ "$requested_test_path" = /* ]]; then
         test_path="$requested_test_path"
@@ -43,7 +43,7 @@ else
     elif [[ -e "$suite_directory/$requested_test_path" ]]; then
         test_path="$suite_directory/$requested_test_path"
     else
-        printf '_test/run: test path not found: %s\\n' "$requested_test_path" >&2
+        printf '_test/run: test path not found: %s\n' "$requested_test_path" >&2
         exit 1
     fi
 fi
