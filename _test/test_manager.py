@@ -670,7 +670,7 @@ class TestTmuxConfig(unittest.TestCase):
         ])
         for table in ("-n", "-T copy-mode", "-T copy-mode-vi"):
             self.assertIn(
-                f'bind-key {table} User1 run-shell "python $HOME/projects/termux-key-manager/copy_executor.py copy_entire_pane \'#{pane_id}\'"',
+                f'bind-key {table} User1 run-shell "python $HOME/projects/termux-key-manager/copy_executor.py copy_entire_pane \'#{{pane_id}}\'"',
                 config,
             )
         self.assertIn(

@@ -3,7 +3,7 @@
 **Snapshot date:** 2026-10-22  
 **Repository:** FocusTorn/termux-key-manager  
 **Branch:** main  
-**Implementation:** Focused selector and executor contract tests user-reported green; broader regression and production runtime verification pending
+**Implementation:** Focused selector and executor contract tests user-reported green; `./_test/run` surfaced a f-string NameError in a config-test expectation, now corrected; rerun and production runtime verification pending
 
 ## Mission
 
@@ -111,8 +111,13 @@ binding tests have been added. The first executor test run reported 1 failure
 and 5 passes: the test expected a standalone `-F` argv element, while the
 executor uses the documented combined `-pF` argument. The test assertion has
 been corrected, and the user has now reported the focused rerun green.
-No test count or full runner transcript was supplied. The broader regression
-run and production action runtime verification remain pending.
+No test count or full runner transcript was supplied. The subsequent
+`./_test/run` selected one test and deselected 31, but the selected config test
+raised `NameError: name 'pane_id' is not defined` when Python evaluated an
+f-string containing the literal tmux token. The test expectation has been
+corrected to escape those braces; the rerun remains pending. See Runtime Log
+§22. Broader regression and production action runtime verification also remain
+pending.
 
 **Next action — run from the TKM repository root:**
 

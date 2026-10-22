@@ -707,3 +707,32 @@ executed.
 regression pass, review what Testmon selected, then verify the production
 actions from root and emacs-style `copy-mode`, including clipboard contents
 and mode exit. Keep Gate 5 open until those runtime checks pass.
+
+## 22. Testmon-selected runner run exposed a f-string NameError in the config test (2026-10-22)
+
+**User-run command:**
+
+```sh
+./_test/run
+```
+
+**Observed result:** the runner stated that it was using Testmon-selected
+coverage. Pytest reported **1 failed, 31 deselected**. The selected failure
+was `TestTmuxConfig.test_tmux_config_for_copy_actions` at
+`_test/test_manager.py:673`; Python raised
+`NameError: name 'pane_id' is not defined` while evaluating the expected
+string, before the config assertion could compare values.
+
+**Root cause:** the expected string is a Python f-string that contains the
+tmux format token `#{pane_id}`. Python interpreted the braces as f-string
+interpolation. The expectation must escape the braces as `#{{pane_id}}` in
+the source to produce the literal `#{pane_id}` at runtime.
+
+**Classification: INVALID TEST (assertion construction error).** This
+traceback is not evidence of a broken production binding; the assertion did
+not reach its comparison. The expected-string source has been corrected.
+No passing rerun is inferred.
+
+**Next action:** rerun `./_test/run`, inspect the Testmon selection and result,
+and keep broader regression and production action runtime verification
+pending until separately established.
