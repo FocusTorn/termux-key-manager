@@ -736,3 +736,33 @@ No passing rerun is inferred.
 **Next action:** rerun `./_test/run`, inspect the Testmon selection and result,
 and keep broader regression and production action runtime verification
 pending until separately established.
+
+## 23. Full coverage test run passed (2026-10-22)
+
+**User-run command:** `test-runner coverage`
+
+The runner explicitly reported that coverage mode runs all tests in the
+selected target, rather than Testmon-selecting a subset.
+
+**Observed result: PASS.** Pytest reported `49 passed in 0.47s`. A JSON
+coverage report was written to the Termux temporary directory. The displayed
+coverage summary was:
+
+| Module | Statement coverage |
+| --- | ---: |
+| `copy_executor.py` | 75% |
+| `copy_selector.py` | 88% |
+| `tmux.py` | 94% |
+| Total | 90% |
+
+The report showed 400 statements, 36 missed statements, 158 branches, and 19
+partial branches across the listed modules. This is full-suite test evidence
+for the selected target and confirms the f-string assertion correction no
+longer causes the suite to fail. Coverage percentages do not establish that
+the uncovered branches are harmless, nor do unit/contract tests establish
+live production copy behavior.
+
+**Next action:** verify the generated configuration and run the three
+production copy actions from root and emacs-style `copy-mode`, checking
+selected text, Termux clipboard contents, and mode exit. Keep Gate 5 open
+until the required runtime checks pass.

@@ -1,7 +1,7 @@
 # Native Tmux Copy Refactor — Roadmap
 
 **Status updated:** 2026-10-22  
-**Implementation status:** Live OSC 133 markers and focused pytest selector tests are verified; the focused executor contract run is user-reported green. The latest `./_test/run` invocation selected one failing test and deselected 31; it exposed a Python f-string `NameError` in the expected config assertion, not a production-binding failure. The assertion is corrected, but rerun, broader regression verification, and production Termux runtime verification remain pending. See [Runtime Log §22](copy-runtime-log.md#22-testmon-selected-runner-run-exposed-a-f-string-nameerror-in-the-config-test-2026-10-22).
+**Implementation status:** Focused selector/executor tests are user-reported green, and the full coverage run completed with 49 passed and 90% total statement coverage. The earlier Testmon-selected run's f-string `NameError` is resolved by the test-source correction; see [Runtime Log §§22–23](copy-runtime-log.md#23-full-coverage-test-run-passed-2026-10-22). Production Termux configuration and live copy-action runtime verification remain pending.
 
 ## Objective
 
@@ -215,7 +215,7 @@ selector fails closed when required prompt/progress boundaries are absent.
 
 The first user-run `./_test/run test_copy_executor.py` reported **1 failed, 5 passed** because the assertion expected a standalone `-F` argv element while the executor sends the documented combined `-pF` option. The assertion was corrected, and the user subsequently reported the focused rerun green; see [Runtime Log §§20–21](copy-runtime-log.md#21-focused-executor-test-rerun-reported-green-2026-10-22). This remains mocked contract-test evidence, not production runtime proof.
 
-The subsequent user-run `./_test/run` selected one test and deselected 31, then failed before the expected-config comparison because a Python f-string interpolated the tmux token `#{pane_id}` and raised `NameError`. The expected string now escapes the braces; the rerun is pending. See [Runtime Log §22](copy-runtime-log.md#22-testmon-selected-runner-run-exposed-a-f-string-nameerror-in-the-config-test-2026-10-22).
+The subsequent Testmon-selected run failed before the expected-config comparison because a Python f-string interpolated `#{pane_id}` and raised `NameError`; the assertion was corrected. The user then ran `test-runner coverage`, which ran all tests in the selected target and passed **49 tests** with **90% total statement coverage**. See [Runtime Log §§22–23](copy-runtime-log.md#23-full-coverage-test-run-passed-2026-10-22). This establishes suite-level test success, not live production copy behavior.
 
 - [x] Add the pure pytest selector and pass its focused tests (user-reported).
 - [x] Add executor contract tests for each action, clipboard output, fail-closed
@@ -223,8 +223,9 @@ The subsequent user-run `./_test/run` selected one test and deselected 31, then 
 - [x] Wire the three actions to the shared executor and remove legacy helper
   implementations from generated runtime code and action definitions.
 - [x] Re-run the focused executor tests after correcting the combined `-pF` assertion (user-reported green; Runtime Log §21).
-- [x] Run `./_test/run` once to gather the current Testmon-selected result (1 failed, 31 deselected; Runtime Log §22).
-- [ ] Re-run `./_test/run` after correcting the f-string assertion; review selected coverage and verify generated configuration in Termux.
+- [x] Investigate and correct the f-string assertion failure in the Testmon-selected run (Runtime Log §22).
+- [x] Run the full coverage test target after the correction: `test-runner coverage`, 49 passed, 90% total statement coverage (Runtime Log §23).
+- [ ] Verify the generated configuration in Termux and inspect remaining coverage gaps relevant to copy actions.
 - [ ] Runtime-test the production actions from root and emacs-style
   `copy-mode`, including clipboard contents and mode exit.
 

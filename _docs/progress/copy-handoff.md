@@ -3,7 +3,7 @@
 **Snapshot date:** 2026-10-22  
 **Repository:** FocusTorn/termux-key-manager  
 **Branch:** main  
-**Implementation:** Focused selector and executor contract tests user-reported green; `./_test/run` surfaced a f-string NameError in a config-test expectation, now corrected; rerun and production runtime verification pending
+**Implementation:** Focused tests user-reported green; full coverage target passed (49 tests, 90% total statement coverage); production configuration and live copy-action runtime verification pending
 
 ## Mission
 
@@ -111,13 +111,11 @@ binding tests have been added. The first executor test run reported 1 failure
 and 5 passes: the test expected a standalone `-F` argv element, while the
 executor uses the documented combined `-pF` argument. The test assertion has
 been corrected, and the user has now reported the focused rerun green.
-No test count or full runner transcript was supplied. The subsequent
-`./_test/run` selected one test and deselected 31, but the selected config test
-raised `NameError: name 'pane_id' is not defined` when Python evaluated an
-f-string containing the literal tmux token. The test expectation has been
-corrected to escape those braces; the rerun remains pending. See Runtime Log
-§22. Broader regression and production action runtime verification also remain
-pending.
+The full coverage run then completed with `49 passed in 0.47s` and 90%
+total statement coverage. `copy_executor.py` was at 75%, `copy_selector.py`
+at 88%, and `tmux.py` at 94%. See Runtime Log §23. The earlier f-string
+assertion failure is resolved. Production configuration inspection and live
+copy-action runtime verification remain pending.
 
 **Next action — run from the TKM repository root:**
 
@@ -125,10 +123,11 @@ pending.
 ./_test/run
 ```
 
-Review the Testmon-selected coverage because tests omitted by Testmon are not
-executed. Then runtime-test the production actions from root and emacs-style
-`copy-mode`, including clipboard contents and mode exit. `copy-mode-vi` remains
-out of scope, and `Patch Failed` selection remains deferred.
+Inspect the generated configuration in Termux and review the uncovered
+copy-related branches. Then runtime-test the production actions from root and
+emacs-style `copy-mode`, checking selected text, clipboard contents, and mode
+exit. `copy-mode-vi` remains out of scope, and `Patch Failed` selection remains
+deferred.
 
 ## Constraints
 
