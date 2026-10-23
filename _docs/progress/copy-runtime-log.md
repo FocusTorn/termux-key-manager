@@ -1,7 +1,7 @@
 # Copy Runtime Progress Log
 
 **Started:** 2026-10-16  
-**Updated:** 2026-10-22  
+**Updated:** 2026-10-23  
 **Purpose:** Record dated runtime evidence, failures and inconclusive trials, and test-harness corrections while evaluating replacement of TKM's legacy `cpy_*` shell helpers with tmux copy-mode actions.
 
 This document records only behavior demonstrated by the test outputs returned
@@ -934,3 +934,32 @@ destination.
 **Next implication:** statement misses now have explicit regression coverage
 proposals. Re-run the full coverage target and inspect the refreshed missing
 lines and branch counts before changing the coverage audit to PASS.
+
+
+## 28. Regression coverage rerun passed (2026-10-23)
+
+**User-run command:** `g l && test-runner coverage && coverage report -m copy_executor.py copy_selector.py tmux.p`
+
+**Observed result: PASS — full test suite and targeted paths.**
+
+- `57 passed in 0.92s`.
+- Full-suite summary: 400 statements, 14 missed; 158 branches, 14 partial;
+  95% total coverage.
+- `copy_executor.py`: 52 statements, 0 missed; 16 branches, 0 partial;
+  100% coverage.
+- `copy_selector.py`: 35 statements, 0 missed; 16 branches, 0 partial;
+  100% coverage.
+- `tmux.py`: 74 statements, 0 missed; 28 branches, 0 partial; 100% coverage.
+- The detailed report for `copy_executor.py` and `copy_selector.py` showed
+  87 statements and 32 branches, with no statements missed or branches partial.
+
+**Warning / command correction:** the final detailed-report argument was
+`tmux.p`, so coverage.py warned that it could not parse that path. The full
+suite summary did include `tmux.py` at 100% coverage, but the standalone
+detailed report omitted it. This is a report-path typo after the tests passed,
+not a test-suite failure.
+
+**Next implication:** the exact coverage gaps listed in §27 are now exercised.
+The Gate 6 coverage-target run is PASS. The final repository audit remains open
+until the corrected line-level report and local status/history checks are
+confirmed.
