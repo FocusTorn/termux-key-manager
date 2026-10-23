@@ -33,7 +33,7 @@ The command itself is not executed by Python during macro conversion. It is emit
 
 Requests a named tmux integration action.
 
-    { "tmux": "cancel-copy-mode" }
+    { "tmux": "copy_mode_exit" }
 
 The same action is represented on two sides:
 
@@ -47,11 +47,11 @@ Actions are compiled in source order.
 For example:
 
     [
-        { "tmux": "cancel-copy-mode" },
-        { "shell": "cpy_all" }
+        { "macro": "PASTE" },
+        { "shell": "refresh" }
     ]
 
-first emits the tmux action and then the clipboard helper.
+first emits the macro fragment and then the shell command.
 
 ## Validation
 
@@ -63,8 +63,16 @@ An unknown tmux action name is invalid.
 
 Current code raises `ValueError` for these cases rather than silently ignoring them.
 
-## Current tmux action
+## Current tmux actions
 
-The only currently registered tmux action is:
+| Action | Behavior |
+|---|---|
+| `copy_mode_exit` | Cancel active tmux copy mode |
+| `copy_entire_pane` | Capture available pane history and update tmux paste buffer and Termux clipboard |
+| `copy_subset` | Select the latest valid pytest progress range before the final prompt-marked row; fail closed when boundaries are missing |
+| `copy_viewport` | Copy the visible pane viewport |
+| `clear_terminal` | Use context-specific native tmux commands to reset/clear terminal state |
 
-    cancel-copy-mode
+Copy actions dispatch through the shared `copy_executor.py`. Acceptance
+testing covers root and emacs-style `copy-mode`; `copy-mode-vi` is out of
+scope.

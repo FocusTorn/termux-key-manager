@@ -23,36 +23,53 @@ For each action, bindings are generated in both:
 
 The sequence is private to the TKM/tmux integration. It is the transport between the Termux macro and the tmux binding, rather than a command typed into Bash.
 
-## cancel-copy-mode
+## Registered actions
 
-The current supported action is:
+| Action | Sequence suffix | Runtime behavior |
+|---|---:|---|
+| `copy_mode_exit` | `30012` | Cancel active copy mode |
+| `copy_entire_pane` | `30013` | Run shared executor on available pane history |
+| `copy_subset` | `30014` | Run shared executor with pytest-range selection |
+| `clear_terminal` | `30015` | Use context-specific native tmux commands |
+| `copy_viewport` | `30016` | Run shared executor on visible viewport |
 
-    cancel-copy-mode
-
-Its private terminal sequence is:
-
-    ESC [ 5 ; 3 0 0 1 2 ~
-
-The generated tmux binding maps that user key to:
-
-    send-keys -X cancel
-
-The generated configuration also sets:
-
-    set -g assume-paste-time 0
+The three copy actions invoke `copy_executor.py` with the targeted
+`#{pane_id}`. Successful copies update the tmux paste buffer and Termux
+clipboard using `termux-clipboard-set`.
 
 ## Mixed action sequences
 
-A definition can combine tmux and shell actions in one ordered sequence:
+A definition can combine an input macro and a shell action:
 
     "actions": [
-        { "tmux": "cancel-copy-mode" },
-        { "shell": "cpy_all" }
+        { "macro": "PASTE" },
+        { "shell": "refresh" }
     ]
 
-The tmux action reaches the tmux binding. The shell action becomes the normal Bash command `cpy_all`.
+The actions are emitted in source order. A `tmux` action is not a Bash
+command, so it does not belong in `HISTIGNORE`.
 
-Only the shell action participates in `HISTIGNORE`. The tmux action does not, because Bash never receives it as a command.
+## Generated key tables
+
+Bindings are generated for root, `copy-mode`, and `copy-mode-vi`. Runtime
+acceptance checks cover root and emacs-style `copy-mode`; `copy-mode-vi` is
+explicitly out of scope. The generated configuration sets:
+
+    set -g assume-paste-time 0
+
+Before new bindings are written, `tmux.py` clears stale TKM user-key
+assignments and bindings in the managed range.
+
+## Copy key mapping
+
+- CPY_ALL main key -> `copy_entire_pane`, including available scrollback.
+- CPY_ALL popup labelled COPY -> `copy_viewport`, visible viewport only.
+- CPY_TEST -> `copy_subset`, semantic pytest result range.
+- CPY_PASTE emits `PASTE ENTER` before invoking `copy_entire_pane`.
+
+The subset selector uses flags from `capture-pane -pF -S -` and requires a
+pytest progress row ending in `[100%]` before the final prompt-marked row.
+The `Patch Failed` selector remains deferred.
 
 ## Replacement
 

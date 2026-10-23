@@ -821,3 +821,41 @@ coverage for `copy_executor.py`, 88% for `copy_selector.py`, and 94% for
 in this repository's evidence. These cases are candidates for review, not
 claims about exact uncovered lines. Gate 6 carries the line-specific coverage
 audit forward.
+
+
+## 25. Current helper documentation reconciled (2026-10-22)
+
+**Classification: STATIC REPOSITORY AUDIT; NOT A RUNTIME TEST.**
+
+A source/documentation audit after the production runtime matrix found that
+several operational guides still described removed clipboard shell helpers as
+current behavior. The stale descriptions covered the helper inventory,
+registered tmux actions, generated helper output, and examples invoking
+`cpy_all` from a shell. Affected guides: `_docs/actions.md`,
+`_docs/architecture.md`, `_docs/clipboard.md`, `_docs/commands.md`,
+`_docs/generated-files.md`, `_docs/macros.md`, `_docs/primer.md`,
+`_docs/tmux.md`, and `_docs/testing.md`.
+
+**Observed in current source:** the inspected `_templates/helpers.sh.template`
+contains no `cpy_*` definitions; `helpers.py` generates that template and
+does not implement clipboard-copy functions; `macros.py` maps current copy
+actions to `copy_executor.py`; and `copy_executor.py` / `copy_selector.py`
+provide the shared executor and pytest selector. `_test/test_manager.py`
+retains intentional negative assertions that old helper functions are not
+generated.
+
+The nine operational guides were reconciled with the active routes: CPY_ALL
+main key -> `copy_entire_pane`, CPY_ALL COPY popup -> `copy_viewport`,
+CPY_TEST -> `copy_subset`, and CPY_PASTE -> `PASTE ENTER` followed by
+`copy_entire_pane`. The guides now treat the executor and selector as
+repository source modules, not generated files.
+
+**Preserved intentionally:** historical references in this append-only log
+and source-level research notes remain as history. Regression assertions
+mentioning old helper names remain so those functions cannot silently return.
+These are not active definitions or invocations.
+
+**Next implication:** stale current-operation guidance is reconciled. Gate 6
+remains open for the line-specific missing-coverage audit and final
+diff/ref/history verification. Aggregate coverage percentages do not establish
+the exact missing lines.

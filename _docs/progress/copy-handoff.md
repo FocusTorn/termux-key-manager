@@ -54,9 +54,12 @@ copy executor and three callers: `copy_entire_pane`, `copy_viewport`, and
   coverage run if available; otherwise rerun the coverage target and capture
   the detailed missing-line output or report path. The durable log currently
   contains aggregate percentages only.
-- Gate 6: audit remaining `cpy_*` references, remove any obsolete live
-  definitions/calls, and verify final diff, ref state, and commit history.
-- Source/test inspection suggests edge cases worth checking include a missing
+- The source/helper-template audit found no active `cpy_*` function
+  definitions or invocation in the inspected production path. The nine stale
+  operational guides were reconciled; old names remain in historical research
+  and progress records plus deliberate negative regression assertions
+  (Runtime Log §25).
+- Source/test inspection suggests edge cases worth checking include missing
   `pane_id`, empty non-subset capture output, tmux/clipboard subprocess
   failures, and CRLF or unterminated final rows in selector parsing. These are
   candidates, not confirmed exact coverage misses.
@@ -67,8 +70,9 @@ copy executor and three callers: `copy_entire_pane`, `copy_viewport`, and
   or imply behavior there has been verified.
 - tmux's native `load-buffer -w` terminal clipboard path remains untested;
   retain the proven `termux-clipboard-set` endpoint.
-- Distinguish runtime evidence from source/test inspection. Do not mark the
-  line-specific coverage audit complete from aggregate percentages alone.
+- Do not mark the line-specific coverage audit complete from aggregate
+  percentages alone.
+
 
 ## Fixed workflow constraints
 
@@ -80,7 +84,6 @@ copy executor and three callers: `copy_entire_pane`, `copy_viewport`, and
 - Continue using the repository's connected GitHub workflow for remote
   commits; check the current branch tip and affected blob SHAs before mutation.
 
-**Next action:** Inspect line-specific coverage gaps from the last
-`test-runner coverage` report (the durable log currently contains aggregate
-percentages only), then audit remaining `cpy_*` references and verify the
-final diff, branch state, and commit history.
+**Next action:** Retrieve the line-specific missing-coverage report from the
+last `test-runner coverage` run, or rerun coverage and preserve its detailed
+report. Then verify the final diff, branch state, and commit history.

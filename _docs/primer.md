@@ -33,7 +33,7 @@ TKM owns:
 - generated shell helpers
 - generated Bash history configuration
 - generated tmux integration
-- clipboard workflows implemented by those helpers
+- clipboard workflows dispatched through tmux actions and the shared executor
 - update behavior
 - tests for the above
 
@@ -51,7 +51,9 @@ TAP is a separate project. Do not introduce TAP architecture or historical PTY e
     jsonc.py       JSONC comment stripping
     config.py      project and generated-file paths
     update.py      update entry point
-    tests/         behavioral coverage
+    copy_executor.py shared runtime copy executor
+    copy_selector.py pytest output-range selector
+    _test/          behavioral and contract tests
 
 ## Generated files
 
@@ -64,17 +66,12 @@ TKM owns only the generated portions described in `generated-files.md`. User con
 
 ## Available TKM commands
 
-The generated helper file currently provides:
+The generated helper template provides `edit_create`, `edit_execute`,
+`clr`, and `refresh`. The legacy `cpy`, `cpy_all`, `cpy_test`, and
+`cpy_pytest` shell functions are not generated. Clipboard keyboard actions
+run through the tmux integration and `copy_executor.py`.
 
-    cpy
-    cpy_all
-    cpy_pytest
-    clr
-    refresh
-
-See `_docs/commands.md` for exact behavior.
-
-These are shell helpers. They are not separate TKM executables.
+See `_docs/commands.md` for details.
 
 ## Macro actions
 

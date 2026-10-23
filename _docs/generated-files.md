@@ -26,7 +26,7 @@ The `HISTIGNORE` value is generated from every shell command declared in `macros
 
 Actions of type `tmux` or `macro` are not included because they do not execute Bash commands.
 
-For the special helper `cpy`, TKM uses `cpy*` so invocations with arguments are also ignored.
+Clipboard functions are not generated in `helpers.sh`. Copy keys are tmux actions routed to the repository's `copy_executor.py`; the old `cpy_*` helper names remain only in regression assertions and historical notes.
 
 Content outside the block belongs to the user.
 
@@ -38,6 +38,10 @@ TKM uses:
     # <<< termux-key-manager tmux <<<
 
 Only this block is TKM-owned.
+
+## Copy runtime modules
+
+`copy_executor.py` and `copy_selector.py` are repository source files called by tmux bindings. They are not generated runtime configuration files.
 
 ## termux.properties
 

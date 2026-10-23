@@ -8,6 +8,7 @@ Current tests include:
 
 - `_test/test_manager.py`
 - `_test/test_pytest_clipboard.py`
+- `_test/test_copy_executor.py`
 - `_test/test_tmux_replacement.py`
 
 ## test_manager.py
@@ -33,7 +34,15 @@ This suite covers:
 - retaining pytest failure evidence
 - leaving non-pytest clipboard content unchanged
 - selecting the latest pytest run
-- generation of the `cpy_pytest` helper
+- latest pytest progress selection before the final prompt marker
+- blank/multiline evidence and fail-closed behavior for missing/malformed boundaries
+
+## test_copy_executor.py
+
+This suite uses mocked subprocess calls to check whole-history and viewport
+capture options, selected pytest output, shared tmux/Termux clipboard writes,
+fail-closed behavior, and copy-mode cancellation. It is contract evidence,
+not live Termux runtime evidence.
 
 ## test_tmux_replacement.py
 
@@ -42,7 +51,7 @@ This suite verifies that replacement of the generated tmux block preserves liter
 ## Running the suite
 
 Run the full test suite from the repository root with `./_test/run`.
-The runner invokes pytest against `_test` and forwards any extra arguments.
+The wrapper invokes pytest against `_test` and accepts zero or one test path.
 
 ## Focused testing
 

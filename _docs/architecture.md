@@ -41,11 +41,11 @@ Actions are emitted in source order.
 For example:
 
     "actions": [
-        { "tmux": "cancel-copy-mode" },
-        { "shell": "cpy_all" }
+        { "macro": "PASTE" },
+        { "shell": "refresh" }
     ]
 
-The first action is handled by the tmux integration. The second becomes a normal shell command. Because it is a shell command, it is also included in the dynamically generated Bash `HISTIGNORE`.
+The first action emits macro input. The second becomes a normal shell command and is included in Bash `HISTIGNORE`. Copy-key actions use `tmux` actions that dispatch to `copy_executor.py`; they do not call clipboard shell helpers.
 
 Nested popup definitions use the same action conversion and discovery rules.
 
@@ -76,6 +76,10 @@ It derives Bash `HISTIGNORE` from shell commands declared in source definitions,
 ### tmux.py
 
 Discovers tmux actions declared by the source and generates the matching marked section in `.tmux.conf`.
+
+### copy_executor.py and copy_selector.py
+
+`copy_executor.py` handles whole-history, viewport, and semantic subset copies. It captures pane text, normalizes non-subset output, updates the tmux paste buffer and Termux clipboard, and exits copy mode after actions invoked there. `copy_selector.py` selects the latest valid pytest progress range before the final prompt-marked row and fails closed when boundaries are missing.
 
 ### update.py
 

@@ -255,15 +255,18 @@ production actions are runtime-verified in both required contexts.
   The durable record contains aggregate percentages but not the missing-line
   report. Review the current candidates in Runtime Log §24 without assuming
   they are the exact uncovered lines.
-- [ ] Inspect all remaining `cpy_*` references and remove obsolete calls and
-  definitions.
+- [x] Audit inspected production code and the helper template for executable
+  `cpy_*` calls/definitions; none were found. Tests deliberately assert their
+  absence.
+- [x] Reconcile the nine stale operational guides with the current executor
+  and key mappings (Runtime Log §25). Historical research and append-only logs
+  retain legacy names intentionally.
 - [ ] Verify the diff, working/ref state, and commit history before calling
   the refactor complete.
 
-**Next action:** Inspect line-specific coverage gaps from the last
-`test-runner coverage` report (the durable log currently contains aggregate
-percentages only), then audit remaining `cpy_*` references and verify the
-final diff, branch state, and commit history.
+**Next action:** Retrieve the line-specific missing-coverage report from the
+last `test-runner coverage` run, or rerun coverage and preserve its detailed
+report. Then verify the final diff, branch state, and commit history.
 
 **Exit condition:** all three callers use the central native executor, all
 required tests pass, and no legacy copy path remains.

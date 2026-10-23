@@ -33,11 +33,11 @@ A definition may contain fields together when the resulting Termux representatio
 For example:
 
     "actions": [
-        { "tmux": "cancel-copy-mode" },
-        { "shell": "cpy_all" }
+        { "macro": "PASTE" },
+        { "shell": "refresh" }
     ]
 
-The actions are emitted in order. The tmux action does not execute a Bash command; the shell action does.
+The actions are emitted in order. The example emits macro input then a shell command. Copy keys use tmux actions that invoke the shared `copy_executor.py`, rather than shell clipboard helpers.
 
 Shell actions are also included when TKM dynamically builds `HISTIGNORE`, so shell helpers invoked through a macro do not remain in Bash history. Tmux and native macro actions are not included because they are not Bash commands.
 
@@ -51,6 +51,13 @@ The current layout is:
     CTRL ALT [blank] CPY_ALL CPY_TEST CPY_PASTE [blank] LT DN RT
 
 The blank key is the definition whose ID is a single space.
+
+## Current copy routes
+
+- CPY_ALL main key -> `copy_entire_pane`
+- CPY_ALL popup labelled COPY -> `copy_viewport`
+- CPY_TEST -> `copy_subset`
+- CPY_PASTE emits `PASTE ENTER`, then invokes `copy_entire_pane`
 
 ## Current definitions
 
@@ -68,7 +75,7 @@ The current source includes:
 
 Popups may be simple strings, such as `PGUP`, or nested definition objects.
 
-Nested popup definitions are passed through the same conversion logic as normal definitions. Their `actions` are therefore processed in the same order and their shell actions are also included in the generated `HISTIGNORE`.
+Nested popup definitions are passed through the same conversion logic as normal definitions. Their `actions` are processed in source order, and their declared shell actions are included in generated `HISTIGNORE`.
 
 ## Editing rule
 
