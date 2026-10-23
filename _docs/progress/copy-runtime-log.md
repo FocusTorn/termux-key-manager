@@ -963,3 +963,47 @@ not a test-suite failure.
 The Gate 6 coverage-target run is PASS. The final repository audit remains open
 until the corrected line-level report and local status/history checks are
 confirmed.
+
+
+## 29. Final focused coverage report and local state audit (2026-10-23)
+
+**User-run command:** `g l && coverage report -m copy_executor.py copy_selector.py tmux.py && git status --short --branch && git branch -vv && git diff --check && git diff --cached --check && git log -5 --oneline --decorate`
+
+**Observed result: PASS — detailed target-module coverage and local repository audit.**
+
+The corrected detailed report returned:
+
+```text
+Name               Stmts   Miss Branch BrPart  Cover   Missing
+--------------------------------------------------------------
+copy_executor.py      52      0     16      0   100%
+copy_selector.py      35      0     16      0   100%
+tmux.py               74      0     28      0   100%
+--------------------------------------------------------------
+TOTAL                161      0     60      0   100%
+```
+
+All 161 statements and 60 reported branches across these three modules are
+covered; no statements are missing and no branches are partial.
+
+**Repository-state evidence from the same command:**
+
+- `g l` pulled the three continuity-document commits and reported
+  `STATE: reconciled`.
+- `git status --short --branch` returned only `## main...origin/main`,
+  with no modified/untracked paths listed.
+- `git branch -vv` showed local `main` at `f1d3ea0`, tracking
+  `origin/main`.
+- Both `git diff --check` and `git diff --cached --check` passed:
+  neither emitted diagnostics, and the chained command continued.
+- The five-entry local history matched the expected remote sequence:
+  `f1d3ea0`, `a26884e`, `35f95f5`, `796f2c3`, `20d60b5`.
+- The current-session review intake found no pending `for-review` snapshot:
+  the branch was 0 commits ahead of `main`, had no `.review-id`, and
+  required no integration or ref reset.
+
+**Final implication:** Gate 6's coverage and repository-state audit is PASS.
+The accepted copy-refactor verification gate is satisfied. The explicitly
+deferred `Patch Failed`-specific subset behavior remains outside this gate;
+the native tmux `load-buffer -w` clipboard path and `copy-mode-vi` proof
+also remain intentionally untested.
