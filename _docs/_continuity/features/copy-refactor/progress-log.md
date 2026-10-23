@@ -1098,3 +1098,18 @@ Interpretation: Source-level contract and focused mocked-executor behavior are s
 Not established: The new `capture-pane -pF -S -` command's live full-history P/O flag behavior; actual CPY_ALL macro/clipboard behavior in the two accepted runtime contexts; fresh full-suite coverage.
 Next implication: Verify via `./_test/run` in the project checkout and perform target Termux runtime acceptance before marking G2 or G3 DONE.
 Corrects: none
+
+## PL-0007 — 2026-10-23 — CPY_ALL code and test paths verified on main
+Status: PASS
+Hypothesis/question: Did the CPY_ALL source/test change land as a coherent remote update while preserving the continuity history and keeping remaining runtime acceptance explicit?
+Setup: Commit \`aeea8353b979fb17830a27e9d5bad7073c6f9313\` on \`main\`; recursive committed tree and current source/test/document paths fetched through the connected GitHub integration.
+Action: Inspected the new commit's tree and fetched the production executor, selector, new CPY_ALL tests, revised executor tests, roadmap, handoff, research update, and project continuity guidance. No project runner, coverage job, or Termux runtime action was executed.
+Observed:
+- The commit adds \`_test/test_copy_entire_pane.py\`, updates the existing CPY_ALL executor contract test, and routes \`copy_entire_pane\` through \`capture-pane -pF -S -\` plus \`select_entire_pane\`.
+- The selector returns captured visible text only before the last P-flagged row, preserves row endings, and returns no result for malformed/missing boundaries or an empty pre-prompt selection.
+- The new test file is present with normal file mode \`100644\`; canonical continuity files and the executable checker remain present; the four legacy \`_docs/progress/\` paths remain retired.
+- The inherited 29 numbered log sections are retained; PL-0005 documents the valid pre-change RED evidence and PL-0006 the 23 passing focused local tests. The research addendum distinguishes those local tests from the still-unrun project wrapper and target runtime.
+Interpretation: The remote source and tracking documents now express the same partial implementation checkpoint. The P-flag behavior in live full-history capture and actual Android clipboard output remain open acceptance work.
+Not established: A live target runtime pass; complete \`./_test/run\` suite, fresh coverage, or executed continuity checker.
+Next implication: Update the final handoff to this verified code SHA and continue with project-shell and live CPY_ALL validation.
+Corrects: none
