@@ -6,8 +6,8 @@
 
 This document records only behavior demonstrated by the test outputs returned
 from the Termux environment. Source-level analysis is recorded in
-[R1.1: tmux Internals](../research/r1_1-tmux-internals.md) and
-[R1.2: TKM Implications](../research/r1_2-tkm-implications.md).
+[R1.1: tmux Internals](../../../research/r1_1-tmux-internals.md) and
+[R1.2: TKM Implications](../../../research/r1_2-tkm-implications.md).
 
 ## Evidence summary
 
@@ -31,7 +31,7 @@ from the Termux environment. Source-level analysis is recorded in
 | Direct OSC 133 marker handling in tmux 3.8 | **PASS** | Direct A/B/C sentinels appeared with prefixes `P`, `-`, and `O` |
 | Interpret tmux 3.8 `W`/`X` flags | **PASS** | `X` appeared on Unicode prompt rows and `WX` on a wrapped line; tmux 3.8 maps `W` to wrapped and `X` to extended cells |
 | Pytest semantic selector | **PASS (user-reported)** | The user reported the focused `test_pytest_clipboard.py` run as green on 2026-10-22 |
-| Missing-marker and failure behavior | **TESTS ADDED; RUN PENDING** | Tests cover absent prompt, absent valid progress before the prompt, malformed rows, and prompt-like output without a `P` flag |
+| Pytest subset missing-marker and failure behavior | **PASS (recorded unit/coverage evidence)** | Tests cover absent prompt/progress boundaries, malformed rows, and prompt-like output without a `P` flag; §§17, 28–29. This does not establish the separate CPY_ALL whole-pane prompt-cutoff contract |
 | Production `copy_entire_pane` via CPY_ALL | **PASS** | Fresh clipboard sentinel verified from root and emacs-style copy mode |
 | Production `copy_subset` via CPY_TEST | **PASS** | Progress and end markers included; preceding marker excluded from root and copy-mode results |
 | Production `copy_viewport` via the COPY popup | **PASS** | Visible sentinel included and older scrollback sentinel excluded from root and copy-mode results |
@@ -1007,3 +1007,47 @@ The accepted copy-refactor verification gate is satisfied. The explicitly
 deferred `Patch Failed`-specific subset behavior remains outside this gate;
 the native tmux `load-buffer -w` clipboard path and `copy-mode-vi` proof
 also remain intentionally untested.
+
+
+## PL-0001 — 2026-10-23 — Baseline recorded from the legacy copy workspace
+Status: NOT TESTED
+Hypothesis/question: Does the recorded shared-executor checkpoint also establish the full CPY_ALL/M-w product contract?
+Setup: `main` at `99367e9fa31e2cf42f45862c1b75dd07aa9a79f6` before migration; legacy `_docs/progress/` workspace; PRD `_docs/PRD/2026-09-23-m-w-select-all-copy.md`.
+Action: Read the legacy log, roadmap, handoff, PRD, current executor, selector, and tests through the GitHub connector. No test, runtime command, or continuity script was executed in this session.
+Observed:
+- The legacy log preserves 29 numbered sections and reports a 57-test pass, 95% overall coverage, 100% statement/branch coverage for `copy_executor.py`, `copy_selector.py`, and `tmux.py`, and a six-case production action/context matrix pass.
+- The records show the shared executor is used by `copy_entire_pane`, `copy_viewport`, and `copy_subset`; generated `cpy_*` definitions/invocations were removed from the active production path.
+Interpretation: The accepted shared-executor checkpoint is supported by the existing user-run evidence. It does not by itself establish all acceptance criteria of the separate M-w whole-pane PRD.
+Not established: Correct exclusion of the final shell prompt and later content; exact preservation of every character before that boundary on the target Termux runtime.
+Next implication: Preserve historical evidence and track the still-open CPY_ALL PRD requirements as a separate gate.
+Corrects: none
+
+## PL-0002 — 2026-10-23 — CPY_ALL source does not satisfy the full M-w contract
+Status: NOT TESTED
+Hypothesis/question: Does the current `copy_entire_pane` path exclude the final prompt and preserve prior content exactly?
+Setup: Current `copy_executor.py` at `99367e9fa31e2cf42f45862c1b75dd07aa9a79f6`; M-w PRD `_docs/PRD/2026-09-23-m-w-select-all-copy.md`; existing `_test/test_copy_executor.py`.
+Action: Compared the current source and existing contract test with the PRD. No runtime command was executed.
+Observed:
+- `copy_entire_pane` captures using `capture-pane -pJ -S -`; unlike `copy_subset`, it does not request flag-prefixed rows or call a final-prompt selector.
+- The non-subset path calls `_normalize_pane_text`, which applies `rstrip()` to each line, removes trailing blank rows, and rejoins the content using newline characters.
+- The existing whole-pane executor test expects trailing spaces and terminal blank rows to be removed, while the PRD explicitly requires whitespace and blank lines to be preserved. The source path also contains no implemented final-`P` boundary cutoff.
+Interpretation: The current implementation visibly conflicts with the PRD's exact-preservation requirement, and the final-prompt cutoff is not demonstrated. This is a source-level conformance finding, not a newly executed runtime failure.
+Not established: The complete behavior of a corrected selector or its live result on Termux/tmux.
+Next implication: Keep the feature PARTIAL; write CPY_ALL-specific contract tests before modifying production code.
+Corrects: none
+
+## PL-0003 — 2026-10-23 — Continuity migration plan and source mapping
+Status: NOT TESTED
+Hypothesis/question: Can the legacy flat copy workspace be merged into one canonical FT.Continuity layout without losing evidence or keeping two authoritative systems?
+Setup: The four legacy files under `_docs/progress/`; current `_docs/development.md`; no existing `_docs/_continuity/`, `AGENTS.md`, or `CLAUDE.md` was present in the inspected tree.
+Action: Prepared the semantic mapping and atomic tree update; no remote ref has been moved by this record.
+Observed:
+- `_docs/progress/README.md` supplies workflow and project constraints for the new `_docs/_continuity/README.md`.
+- `copy-runtime-log.md` maps to `features/copy-refactor/progress-log.md`; inherited sections 1–29 remain in their original order, followed by continuity PL entries.
+- `copy-roadmap.md` maps to `features/copy-refactor/roadmap.md`, reconciling completed executor work with the open CPY_ALL PRD gate and preserving durable decisions.
+- `copy-handoff.md` maps to the refreshed `features/copy-refactor/handoff.md`; it is written last and carries a verified repository SHA.
+- The development guide receives a pointer to the canonical continuity reading order. The legacy four-file workspace is retired in the same tree update only after its useful history is represented in the canonical layout.
+Interpretation: Use one canonical feature slug, `copy-refactor`; express PARTIAL in the index summary while retaining the allowed feature status ACTIVE until all required gates pass. Do not create a closeout file before acceptance criteria are met.
+Not established: The remote tree/ref mutation and post-write structural checks until those operations complete; executing `check.sh` remains a shell-side verification step.
+Next implication: Publish the migration atomically, verify the resulting remote tree and references, then refresh the handoff last.
+Corrects: none

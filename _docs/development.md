@@ -60,3 +60,10 @@ TKM and TAP are separate projects. TKM documentation should describe TKM, not es
 Treat inspected files, command output, and test results as evidence.
 
 Do not claim verification that was not actually performed.
+
+## Continuity records
+
+The canonical feature continuity system is [_docs/_continuity/README.md](_continuity/README.md).
+Read README → INDEX → the selected feature handoff → roadmap → cited progress-log entries.
+The current active work is `copy-refactor`; its delivery is explicitly PARTIAL while CPY_ALL/M-w acceptance remains open.
+Run `bash _docs/_continuity/check.sh copy-refactor` in the project shell when validating continuity synchronization.
