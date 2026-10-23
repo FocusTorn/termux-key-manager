@@ -256,8 +256,9 @@ production actions are runtime-verified in both required contexts.
 - [x] Add targeted regression tests for the reported statement paths in the
   executor CLI/validation, selector line-ending parsing, tmux action rejection,
   and tmux config-file handling (Runtime Log §27).
-- [ ] Run the full coverage target and inspect the refreshed statement and
-  branch report; tests added in §27 are not yet run.
+- [x] Run the full coverage target after adding the targeted cases: 57
+  passed; 95% total coverage. `copy_executor.py`, `copy_selector.py`, and
+  `tmux.py` each report 100% statement and branch coverage (Runtime Log §28).
 - [x] Audit inspected production code and the helper template for executable
   `cpy_*` calls/definitions; none were found. Tests deliberately assert their
   absence.
@@ -267,10 +268,10 @@ production actions are runtime-verified in both required contexts.
 - [ ] Verify the diff, working/ref state, and commit history before calling
   the refactor complete.
 
-**Next action:** Run `test-runner coverage && coverage report -m copy_executor.py copy_selector.py tmux.py`
-from the TKM repository root. Review the new test results and remaining
-missing-line/branch counts, then verify the final diff, branch state, and
-commit history.
+**Next action:** Run `g l && coverage report -m copy_executor.py copy_selector.py tmux.py && git status --short --branch && git branch -vv && git diff --check && git diff --cached --check && git log -5 --oneline --decorate`
+from the TKM repository root. Confirm the corrected report includes all three
+modules, the local branch is synchronized and clean, both diff checks pass,
+and the recent history matches the verified remote sequence.
 
 **Exit condition:** all three callers use the central native executor, all
 required tests pass, and no legacy copy path remains.
