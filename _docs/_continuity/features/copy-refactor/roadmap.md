@@ -21,7 +21,7 @@ Retain the completed shared native tmux copy executor for `copy_entire_pane`, `c
 
 ## Synchronization
 
-**Progress through:** PL-0003
+**Progress through:** PL-0004
 
 `Progress through` is the newest actual log entry reviewed and reconciled here. Advance it only after appending a material log entry and reconciling the plan.
 

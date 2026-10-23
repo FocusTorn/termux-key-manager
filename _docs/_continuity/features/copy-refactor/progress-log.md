@@ -1051,3 +1051,20 @@ Interpretation: Use one canonical feature slug, `copy-refactor`; express PARTIAL
 Not established: The remote tree/ref mutation and post-write structural checks until those operations complete; executing `check.sh` remains a shell-side verification step.
 Next implication: Publish the migration atomically, verify the resulting remote tree and references, then refresh the handoff last.
 Corrects: none
+
+
+## PL-0004 — 2026-10-23 — Remote continuity migration structure verified
+Status: PASS
+Hypothesis/question: Did the atomic migration publish one coherent canonical continuity system without losing the inherited evidence or leaving the legacy workspace active?
+Setup: Migration commit `7711f3b2e8d1cbfcc6a37803426e0e27ae01a200` on `main`; recursive Git tree and committed canonical files fetched after the ref update.
+Action: Performed connector-only structural/reference checks against the committed tree and file contents. The continuity shell checker itself was not executed.
+Observed:
+- The canonical README, INDEX, executable `check.sh`, and the three `copy-refactor` feature files exist in the committed tree.
+- All 29 inherited numbered progress sections remain present and in order, followed by PL-0001 through PL-0003.
+- The four legacy `_docs/progress/` files are absent after migration; their useful workflow, plan, evidence, and handoff content is represented in the canonical files.
+- The checker is recorded with mode `100755`; the development guide points to the canonical reading order.
+- The feature remains ACTIVE with PARTIAL stated in the index and roadmap; the roadmap/handoff progress markers and next-action lines match; all handoff decision IDs are defined in the roadmap.
+Interpretation: The remote migration is structurally coherent based on the connector-only audit. This is not evidence that `check.sh` was executed or that CPY_ALL's remaining runtime acceptance has passed.
+Not established: Shell execution of `bash _docs/_continuity/check.sh copy-refactor`; implementation/test/runtime proof for the CPY_ALL final-prompt and exact-preservation contract.
+Next implication: Continue with Gate G2 using contract tests before production changes.
+Corrects: none
