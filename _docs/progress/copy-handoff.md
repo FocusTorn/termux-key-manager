@@ -50,10 +50,11 @@ copy executor and three callers: `copy_entire_pane`, `copy_viewport`, and
 
 ## Remaining work and constraints
 
-- Gate 6: inspect the line-specific missing-coverage report from the last
-  coverage run if available; otherwise rerun the coverage target and capture
-  the detailed missing-line output or report path. The durable log currently
-  contains aggregate percentages only.
+- Gate 6: inspect exact missing lines from the current coverage data using
+  `coverage report -m copy_executor.py copy_selector.py tmux.py`. The Termux
+  runner deletes its temporary JSON summary, but leaves coverage.py's default
+  `.coverage` data file. If that data is absent or stale, rerun
+  `test-runner coverage` first.
 - The source/helper-template audit found no active `cpy_*` function
   definitions or invocation in the inspected production path. The nine stale
   operational guides were reconciled; old names remain in historical research
@@ -84,6 +85,7 @@ copy executor and three callers: `copy_entire_pane`, `copy_viewport`, and
 - Continue using the repository's connected GitHub workflow for remote
   commits; check the current branch tip and affected blob SHAs before mutation.
 
-**Next action:** Retrieve the line-specific missing-coverage report from the
-last `test-runner coverage` run, or rerun coverage and preserve its detailed
-report. Then verify the final diff, branch state, and commit history.
+**Next action:** Run `coverage report -m copy_executor.py copy_selector.py tmux.py`
+from the TKM repository root to inspect exact missed lines. If the `.coverage`
+data is absent or stale, run `test-runner coverage` first. Then verify the
+final diff, branch state, and commit history.

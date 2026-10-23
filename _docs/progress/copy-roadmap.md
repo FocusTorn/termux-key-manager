@@ -251,10 +251,10 @@ production actions are runtime-verified in both required contexts.
   runs were user-reported green (Runtime Log §§17, 21).
 - [x] Run the repository's broader test target: `test-runner coverage`
   reported 49 passed and 90% total statement coverage (Runtime Log §23).
-- [ ] Inspect line-specific coverage gaps from the emitted coverage report.
-  The durable record contains aggregate percentages but not the missing-line
-  report. Review the current candidates in Runtime Log §24 without assuming
-  they are the exact uncovered lines.
+- [ ] Inspect exact missing lines from the current coverage data using
+  `coverage report -m copy_executor.py copy_selector.py tmux.py`. The Termux
+  runner deletes its temporary JSON summary after formatting the aggregate
+  table; use the persisted `.coverage` data, not the temporary report.
 - [x] Audit inspected production code and the helper template for executable
   `cpy_*` calls/definitions; none were found. Tests deliberately assert their
   absence.
@@ -264,9 +264,10 @@ production actions are runtime-verified in both required contexts.
 - [ ] Verify the diff, working/ref state, and commit history before calling
   the refactor complete.
 
-**Next action:** Retrieve the line-specific missing-coverage report from the
-last `test-runner coverage` run, or rerun coverage and preserve its detailed
-report. Then verify the final diff, branch state, and commit history.
+**Next action:** Run `coverage report -m copy_executor.py copy_selector.py tmux.py`
+from the TKM repository root to inspect exact missed lines. If the `.coverage`
+data is absent or stale, run `test-runner coverage` first. Then verify the
+final diff, branch state, and commit history.
 
 **Exit condition:** all three callers use the central native executor, all
 required tests pass, and no legacy copy path remains.

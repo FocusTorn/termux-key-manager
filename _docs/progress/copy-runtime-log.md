@@ -859,3 +859,32 @@ These are not active definitions or invocations.
 remains open for the line-specific missing-coverage audit and final
 diff/ref/history verification. Aggregate coverage percentages do not establish
 the exact missing lines.
+
+
+## 26. Detailed coverage command identified (2026-10-22)
+
+**Classification: STATIC TOOLING REVIEW; NOT A TEST RUN.**
+
+The project's `_test/TEST-RUNNER.md` is a symlink to the shared UTR test-runner
+guide. The canonical `scripts/test-runner/test-runner.sh` implementation in
+`FocusTorn/_universal-termux-resources` shows that coverage mode executes
+`coverage run -m pytest`, then formats a Termux-specific summary. The
+formatter creates a temporary JSON report with `mktemp`, prints aggregate
+per-file statement/branch counts, and deletes the temporary JSON report.
+
+The runner does not delete coverage.py's default `.coverage` data file. The
+standard coverage report supports a missing-line column, so the focused
+inspection command for the most recent coverage run is:
+
+```sh
+coverage report -m copy_executor.py copy_selector.py tmux.py
+```
+
+This command is expected to display line numbers; it does not run tests. If the
+`.coverage` data file is absent or stale, rerun `test-runner coverage` first,
+then issue the command above.
+
+**Next implication:** Gate 6 no longer depends on finding the deleted
+temporary JSON report. The line-specific coverage audit remains NOT TESTED
+until the command output is observed; candidate missed branches recorded in
+Section 24 remain hypotheses until compared with that output.
