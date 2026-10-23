@@ -1,9 +1,10 @@
 # Native Tmux Copy Refactor — Handoff
 
-**Snapshot date:** 2026-10-22  
+**Snapshot date:** 2026-10-23  
 **Repository:** FocusTorn/termux-key-manager  
 **Branch:** main  
-**Implementation:** The shared executor and selector are committed. The full coverage target reported 49 passed and 90% total statement coverage. All three production copy actions passed runtime checks from root and emacs-style `copy-mode`; the Gate 5 runtime acceptance criteria are met. Line-specific coverage review and final repository audit remain.
+**Valid as of:** a26884e0db8bd9f0d877dd686bc51fc683a35bae  
+**Implementation:** The shared executor and selector are committed. The latest full coverage target reported 57 passed in 0.92s and 95% total coverage. `copy_executor.py`, `copy_selector.py`, and `tmux.py` each have 100% statement and branch coverage in the full-suite summary. All three production copy actions passed runtime checks from root and emacs-style `copy-mode`; the Gate 5 runtime acceptance criteria are met. Only the corrected detailed report and final local repository audit remain.
 
 ## Mission
 
@@ -39,10 +40,15 @@ copy executor and three callers: `copy_entire_pane`, `copy_viewport`, and
   Fresh clipboard sentinels and subset/viewport boundaries were checked.
   The copy-mode tests returned to the shell; CPY_ALL's copy-mode run explicitly
   reported automatic mode exit. Full evidence is in Runtime Log §24.
-- The user-run `test-runner coverage` command reported **49 passed in 0.47s**
-  and **90% total statement coverage**. Aggregate module coverage was
-  `copy_executor.py` 75%, `copy_selector.py` 88%, and `tmux.py` 94%
-  (Runtime Log §23).
+- The latest user-run `test-runner coverage` command reported **57 passed
+  in 0.92s** and **95% total coverage**. The full-suite report showed
+  `copy_executor.py`, `copy_selector.py`, and `tmux.py` at 100% statement
+  and branch coverage (Runtime Log §28).
+- The detailed follow-up report also showed 100% statement and branch coverage
+  for `copy_executor.py` and `copy_selector.py`. The command misspelled
+  `tmux.py` as `tmux.p`, so coverage.py emitted a path warning and omitted
+  only that module from the detailed report; the full-suite summary still
+  included `tmux.py` at 100%.
 - The focused selector and executor runs were reported green. Live OSC 133
   integration was also confirmed: the user's capture showed `PX` on the
   prompt top-rule row and `O TKM_OSC133_OUTPUT_PROBE` on the output row
@@ -50,12 +56,12 @@ copy executor and three callers: `copy_entire_pane`, `copy_viewport`, and
 
 ## Remaining work and constraints
 
-- The detailed three-module report was retrieved. It identified
-  `copy_executor.py:40, 74-88`, `copy_selector.py:9-10, 15-16`, and
-  `tmux.py:63-64, 103, 124` as missing statements; see Runtime Log §27.
-- Targeted regression cases covering those exact statements have been added,
-  but have **not yet been run**. Run the full coverage target and review the
-  refreshed missing-line/branch counts before marking coverage complete.
+- The targeted coverage regression tests from Runtime Log §27 have now run
+  successfully. The three production modules each report 100% statement and
+  branch coverage in the full-suite summary (Runtime Log §28).
+- The detailed report command contained the typo `tmux.p`. Run the corrected
+  detailed report, then finish the local status/ref/history audit before
+  closing Gate 6. The test suite does not need to be rerun for that report.
 - The source/helper-template audit found no active `cpy_*` function
   definitions or invocations in the inspected production path. The nine stale
   operational guides were reconciled; old names remain in historical research
@@ -80,7 +86,7 @@ copy executor and three callers: `copy_entire_pane`, `copy_viewport`, and
 - Continue using the repository's connected GitHub workflow for remote
   commits; check the current branch tip and affected blob SHAs before mutation.
 
-**Next action:** Run `test-runner coverage && coverage report -m copy_executor.py copy_selector.py tmux.py`
-from the TKM repository root. Review the new test results and remaining
-missing-line/branch counts, then verify the final diff, branch state, and
-commit history.
+**Next action:** Run `g l && coverage report -m copy_executor.py copy_selector.py tmux.py && git status --short --branch && git branch -vv && git diff --check && git diff --cached --check && git log -5 --oneline --decorate`
+from the TKM repository root. Confirm the corrected report includes all three
+modules, the local branch is synchronized and clean, both diff checks pass,
+and the recent history matches the verified remote sequence.
