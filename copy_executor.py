@@ -4,11 +4,11 @@ import argparse
 import subprocess
 import sys
 
-from copy_selector import select_pytest_subset
+from copy_selector import select_entire_pane, select_pytest_subset
 
 
 _COPY_ACTIONS = {
-    "copy_entire_pane": ("-pJ", "-S", "-"),
+    "copy_entire_pane": ("-pF", "-S", "-"),
     "copy_viewport": ("-pJ",),
     "copy_subset": ("-pF", "-S", "-"),
 }
@@ -49,7 +49,9 @@ def execute_copy(action, pane_id):
         capture_args = ["capture-pane", *_COPY_ACTIONS[action], "-t", pane_id]
         captured = _run_tmux(capture_args, capture_output=True).stdout
 
-        if action == "copy_subset":
+        if action == "copy_entire_pane":
+            output = select_entire_pane(captured)
+        elif action == "copy_subset":
             output = select_pytest_subset(captured)
         else:
             output = _normalize_pane_text(captured)

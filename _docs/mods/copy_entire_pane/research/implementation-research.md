@@ -34,9 +34,9 @@
 >
 > Continue directly to the next justified research or implementation step when no blocking uncertainty remains.
 
-Status: Proposed  
-Implementation: Not started  
-Last verified: 2026-09-23
+Status: PARTIAL — CPY_ALL cutoff logic implemented; target runtime acceptance remains pending  
+Implementation: Shared executor + final-prompt selector implemented; focused contract/regression tests pass locally; target Termux behavior NOT TESTED  
+Last verified: 2026-10-23
 
 ---
 
@@ -129,7 +129,7 @@ discard from that boundary through end of capture
 send remaining content to termux-clipboard-set
 ~~~
 
-The architecture remains a hypothesis until each required boundary is verified.
+The architecture remains a hypothesis until each required boundary is verified. Historical stage notes below retain their original chronology; the current implementation/test state is summarized in the 2026-10-23 update at the end of this document.
 
 A textual prompt such as:
 
@@ -145,11 +145,11 @@ must not be the primary delimiter. Such text can legitimately occur inside comma
 
 | Stage | Status | Evidence | Decision |
 |---|---|---|---|
-| Prompt boundary protocol | Pending | OSC 133 is documented by tmux, but target-shell emission/preservation is not yet verified | Use OSC 133 as the preferred implementation direction |
-| Scrollback capture | Verified | tmux 3.7c documentation and existing TKM capture direction establish full-scrollback capture | Capture full scrollback with tmux |
-| Final-boundary extraction | Pending | Exact representation after capture is not yet verified | Do not implement until capture representation is established |
-| Clipboard delivery | Pending | Existing TKM copy path uses Termux clipboard tooling, but exact preservation needs target verification | Deliver the selected capture to the system clipboard |
-| M-w integration | Pending | Production binding must be updated after boundary behavior is verified | Integrate only after the preceding stages are verified |
+| Prompt boundary protocol | Partially verified; full-history CPY_ALL use pending | The inherited runtime log §15 records live P/O flags; subset capture used `-pF`. The exact full-history CPY_ALL capture must still be confirmed in Termux. | Use the P line flag as a protocol boundary, not visible prompt text, and keep target-runtime proof open. |
+| Scrollback capture | Source updated; runtime pending | CPY_ALL now requests `capture-pane -pF -S -` so prompt flags are present and wrapped rows are not joined. | Verify this exact full-history invocation on the target. |
+| Final-boundary extraction | Implemented; focused contract tests pass locally | `select_entire_pane` keeps rows before the last P-flagged row, preserves visible text/endings, and fails closed; PL-0005–PL-0006. | Preserve earlier prompts and all prior captured content exactly. |
+| Clipboard delivery | Existing endpoint recorded PASS; native tmux path remains untested | The executor writes the selected text to tmux's paste buffer and `termux-clipboard-set`. `load-buffer -w` was not established. | Retain the recorded Termux endpoint for current acceptance. |
+| M-w integration | Source updated; target runtime pending | The shared executor routes CPY_ALL through flagged capture and final-prompt selection; the isolated focused suites passed 23 tests. | Validate the production key binding and exact clipboard result in Termux before closing the gate. |
 
 ---
 
@@ -975,3 +975,40 @@ No whitespace trimming or output normalization is permitted.
 Patch Gate Execution is a separate feature and is intentionally not
 specified here.
 ~~~
+
+
+# Current Status Update — 2026-10-23
+
+This update supersedes the older stage-status summaries above where they say implementation has not started. The original stage narratives and dated findings are retained as historical research.
+
+## Current source change
+
+- `copy_executor.py` now captures CPY_ALL with `capture-pane -pF -S -`. It deliberately does not use `-J`, so this processing stage does not join pane rows.
+- New `select_entire_pane` parsing uses the existing flagged-row parser, selects the last row whose flags include `P`, and returns only visible content preceding that row. Earlier prompt rows and prompt-like ordinary output without `P` remain included.
+- Visible text and row endings from the captured pre-prompt rows are passed through without `rstrip`, trimming, or newline reconstruction. Missing/malformed prompt boundaries and empty selections return no result; the executor therefore skips both the tmux-buffer write and the Android clipboard write.
+- Viewport copy retains its existing normalization path. Pytest subset copy retains its existing selector and fail-closed behavior.
+- Clipboard routing remains `tmux load-buffer -` plus `termux-clipboard-set`.
+
+## Test evidence
+
+Before the source change, the new executor-level RED check produced three expected failures against the prior implementation: CPY_ALL did not request flagged capture, included the current prompt instead of cutting it off, and overwrote the clipboard when a valid prompt boundary was absent.
+
+After the implementation change, the local staged source/test slice passed:
+
+```sh
+pytest -q test_copy_entire_pane.py test_copy_executor.py test_pytest_clipboard.py
+```
+
+Observed: **23 passed**. This was a focused Python run against the changed module/test slice assembled from the inspected remote sources; it was not the repository's `./_test/run` harness, the complete test suite, or a Termux runtime test.
+
+## Still not established
+
+- The exact `capture-pane -pF -S -` output and final P boundary for the live CPY_ALL key action on the target Termux/tmux setup.
+- End-to-end exact clipboard preservation from both root and Emacs-style `copy-mode`.
+- Full repository regressions, fresh coverage after this change, or execution of `_docs/_continuity/check.sh`.
+
+The feature remains PARTIAL until these are demonstrated. Run the project test harness and check the production macro with sentinels before changing the gate to DONE.
+
+## Clipboard-path note
+
+The native tmux `load-buffer -w` route remains an untested alternative, not an observed failure. tmux's terminal clipboard integration uses OSC 52 and depends on tmux's `set-clipboard` setting, terminal clipboard capability (`Ms`), and terminal support. See the [tmux clipboard guide](https://github.com/tmux/tmux/wiki/Clipboard). The existing `termux-clipboard-set` route remains the proven current path.

@@ -58,7 +58,7 @@ In connector-only work, verify the actual remote tree, required paths, allowed s
 - The legacy `cpy_*` shell-helper family is decommissioned. No fallback, parallel implementation, or compatibility path is allowed.
 - Define behavior contracts and write relevant tests before changing implementation. Follow `_docs/development.md`'s source-first workflow and verify generated/runtime behavior separately from unit tests.
 - Root and Emacs-style `copy-mode` are the accepted runtime contexts for the current refactor. `copy-mode-vi` is explicitly out of scope unless scope is authorized to change.
-- The proven clipboard endpoint is `termux-clipboard-set`. Native tmux `load-buffer -w` clipboard delivery is not established and is not a blocker to the current path.
+- The proven clipboard endpoint is `termux-clipboard-set`. Native tmux `load-buffer -w` clipboard delivery is not established and is not a blocker to the current path. It is an untested alternative, not a known failure: tmux's terminal clipboard path uses OSC 52 and depends on `set-clipboard`, the terminal `Ms` clipboard capability, and terminal support; see the [tmux clipboard guide](https://github.com/tmux/tmux/wiki/Clipboard).
 - Patch Failed-specific range selection is separate from the M-w PRD and remains deferred; it must not be silently included in CPY_ALL scope.
 - Historical runtime outcomes in the progress log were reported from the user's Termux environment. Distinguish those recorded results from any checks executed by a future agent.
 

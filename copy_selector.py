@@ -81,3 +81,36 @@ def select_pytest_subset(capture):
         return None
 
     return "".join(visible_text for _, visible_text in rows[progress_index:prompt_index])
+
+
+def select_entire_pane(capture):
+    """Return whole-pane content before the final prompt-flagged row, or None.
+
+    Input is output from tmux capture-pane -pF -S -. Each row starts with
+    tmux's line flags and one delimiter space. The final row carrying the P
+    prompt flag and everything after it are excluded; earlier prompts remain
+    ordinary content. Visible text and row endings before the cutoff are
+    preserved exactly. Missing/malformed boundaries and an empty selection
+    fail closed so callers can leave the current clipboard untouched.
+    """
+    rows = []
+    for raw_line in capture.splitlines(keepends=True):
+        row = _parse_capture_row(raw_line)
+        if row is None:
+            return None
+        rows.append(row)
+
+    prompt_index = next(
+        (
+            index
+            for index in range(len(rows) - 1, -1, -1)
+            if "P" in rows[index][0]
+        ),
+        None,
+    )
+    if prompt_index is None:
+        return None
+
+    output = "".join(visible_text for _, visible_text in rows[:prompt_index])
+    return output if output else None
+

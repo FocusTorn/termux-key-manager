@@ -21,7 +21,7 @@ Retain the completed shared native tmux copy executor for `copy_entire_pane`, `c
 
 ## Synchronization
 
-**Progress through:** PL-0004
+**Progress through:** PL-0006
 
 `Progress through` is the newest actual log entry reviewed and reconciled here. Advance it only after appending a material log entry and reconciling the plan.
 
@@ -37,16 +37,16 @@ Retain the completed shared native tmux copy executor for `copy_entire_pane`, `c
 ### G2 — CPY_ALL final-prompt and exact-preservation contract
 **Status:** IN PROGRESS
 **Requires:** G1 (DONE, PL-0001)
-**Exit condition:** A tested whole-pane selector uses a proven prompt-boundary representation, cuts off at the final prompt, retains exactly the preceding content, and leaves the clipboard unchanged when no valid non-empty range exists.
-**Evidence:** PL-0002 records the inspected source mismatch; no passing acceptance evidence yet.
-**Remaining:** Prove the flagged-capture representation for whole-pane capture; add positive/negative selector and executor tests; remove whole-pane normalization that violates the PRD without regressing viewport/subset behavior; observe the contract on-device.
+**Exit condition:** A tested whole-pane selector uses a verified prompt-boundary representation, cuts off at the final prompt, retains exactly the preceding content, and leaves the clipboard unchanged when no valid non-empty range exists; target-runtime behavior is demonstrated.
+**Evidence:** PL-0002 documents the source mismatch; PL-0005 records expected RED failures; PL-0006 records 23 passing focused Python tests after the source change.
+**Remaining:** Verify the exact flagged full-history capture and its final P row on the target Termux/tmux environment; then prove exact clipboard content and fail-closed behavior through the actual CPY_ALL binding in both accepted contexts.
 
 ### G3 — Regression, runtime acceptance, and documentation convergence
 **Status:** NOT STARTED
 **Requires:** G2 (must be DONE with supporting progress-log evidence)
 **Exit condition:** Focused tests, the complete suite, target-module coverage report, and CPY_ALL runtime checks pass; the M-w research record and active guides match the proven behavior; all continuity references and markers are synchronized.
 **Evidence:** none yet for the remaining CPY_ALL contract.
-**Remaining:** Run focused and full regressions, inspect detailed coverage, exercise CPY_ALL in root and Emacs-style copy mode with prompt/whitespace fixtures, update the M-w research record, then refresh this roadmap and handoff. Record only results actually observed.
+**Remaining:** Run the focused tests through `./_test/run` and the complete repository suite; generate a fresh coverage report; exercise CPY_ALL in root and Emacs-style copy mode with prompt/whitespace fixtures; run the continuity checker; record only results actually observed.
 
 ## Blocked
 
@@ -64,18 +64,18 @@ Open alternatives/questions: None for this architectural constraint.
 
 ### D-002 — CPY_ALL follows the M-w whole-pane PRD [ACTIVE]
 Problem/requirement: The original M-w requirement excludes the final prompt and content after it while preserving all earlier content exactly.
-Chosen approach: Use a deterministic protocol/capture boundary, not visible prompt-text matching; retain the pre-boundary content without trimming or normalization.
-Why this approach: The PRD states the contract explicitly; inspected source currently normalizes content and has no final-prompt cutoff.
-Evidence / authorization: PRD `_docs/PRD/2026-09-23-m-w-select-all-copy.md`; source finding PL-0002.
-Constraints that must survive: Prove flag/capture behavior before relying on it; fail closed if the boundary or non-empty selection is missing.
-Open alternatives/questions: Verify that `capture-pane -pF -S -` exposes the final prompt reliably for the full history path before committing to the exact selector interface.
+Chosen approach: Use `capture-pane -pF -S -`; identify the last P-flagged row through `select_entire_pane`; pass through all prior visible content and line endings without normalization.
+Why this approach: It follows the PRD's protocol-boundary and exact-preservation requirements and isolates CPY_ALL from viewport normalization and pytest-specific selection.
+Evidence / authorization: PRD `_docs/PRD/2026-09-23-m-w-select-all-copy.md`; source finding PL-0002; red/green focused evidence PL-0005–PL-0006.
+Constraints that must survive: Confirm the exact flagged capture on target Termux; fail closed if the boundary is missing/malformed or the pre-prompt selection is empty.
+Open alternatives/questions: The parser/executor tests pass locally, but full-history capture and clipboard output still require live target-runtime proof.
 
 ### D-003 — Keep deferred copy scopes separate [ACTIVE]
 Problem/requirement: The CPY_ALL refactor must not silently absorb separate or explicitly excluded behaviors.
 Chosen approach: Keep Patch Failed-specific subset selection deferred as independent scope; keep `copy-mode-vi` and the native `load-buffer -w` clipboard path out of current acceptance.
-Why this approach: The recorded scope decision explicitly excludes vi-mode; the M-w PRD separately excludes Patch Failed extraction; the external clipboard path is already proven through `termux-clipboard-set`.
-Evidence / authorization: PL-0001; M-w PRD; legacy log section 9 and sections 24 and 29.
-Constraints that must survive: Do not treat these deferred items as CPY_ALL blockers or claim they were tested.
+Why this approach: The recorded scope decision explicitly excludes vi-mode; the M-w PRD separately excludes Patch Failed extraction; `termux-clipboard-set` is the recorded proven endpoint. Native `load-buffer -w` is not a known failure, but depends on tmux terminal-clipboard/OSC 52 configuration and terminal support and has not been tested on the target.
+Evidence / authorization: PL-0001; M-w PRD; legacy log sections 9, 24, and 29; PL-0006; [tmux clipboard guide](https://github.com/tmux/tmux/wiki/Clipboard).
+Constraints that must survive: Do not treat these deferred items as CPY_ALL blockers or claim they were tested. Keep `termux-clipboard-set` until the alternate route is independently proven and explicitly brought into scope.
 Open alternatives/questions: Any future Patch Failed work needs its own behavior contract and tests.
 
 ### D-004 — Keep the feature partial until PRD gates pass [ACTIVE]
@@ -88,15 +88,15 @@ Open alternatives/questions: None; the next action is to establish the contract 
 
 ## Complete remaining-work inventory
 
-1. **Capture/boundary proof:** Confirm that a full-history `capture-pane -F` capture reliably marks the final shell prompt on the target Termux/tmux setup. Record exactly what the P/O flags mean for this whole-pane use; do not infer that the subset parser automatically satisfies CPY_ALL.
-2. **Selector contract:** Add tests in `test_copy_entire_pane.py` covering multiple prompt boundaries (use the last one), prompt-like ordinary output without a P flag, content after the final prompt, blank lines, trailing spaces, earlier prompts, preserved line endings, no/malformed prompt boundary, and empty pre-prompt selection.
-3. **Executor integration:** Have `copy_entire_pane` request/use the verified boundary representation, preserve selected content byte-for-byte (as the PRD requires), and leave both tmux/Android clipboard content untouched on invalid/empty selection. Keep viewport normalization and subset behavior isolated unless their contracts require a separate change.
-4. **Target-runtime proof:** Exercise the actual CPY_ALL binding in root and Emacs-style `copy-mode` with sentinel rows around the final prompt and whitespace-sensitive fixtures. Verify the clipboard omits the final prompt and later content while preserving all earlier content exactly.
-5. **Regression/coverage:** Run `./_test/run test_copy_entire_pane.py`, then `./_test/run`, `test-runner coverage`, and `coverage report -m copy_executor.py copy_selector.py tmux.py`. Review real output; after implementation changes, previous 100% coverage does not substitute for a fresh result.
-6. **Docs and continuity:** Reconcile `_docs/mods/copy_entire_pane/research/implementation-research.md` (currently still says implementation not started / last verified 2026-09-23) with current source and new findings; update operational docs if behavior changes; run `bash _docs/_continuity/check.sh copy-refactor` in Termux and record actual output.
+1. **Capture/boundary proof — open:** On the target, inspect `capture-pane -pF -S -` and confirm that the final shell prompt row has the expected P flag in full-history mode.
+2. **Contract tests — written / focused-pass:** `_test/test_copy_entire_pane.py` covers multiple prompt boundaries (using the last), prompt-like output without P, post-prompt content, blank rows, trailing spaces, earlier prompts, line endings, malformed/missing boundaries, empty selection, and untouched clipboard on failure. The isolated focused run passed 23 tests (PL-0006); the project runner has not run against this change yet.
+3. **Executor integration — implemented / runtime-open:** `copy_entire_pane` now requests flagged full history, preserves prior rows without normalizing, and leaves both buffer and system clipboard unchanged for invalid/empty ranges. Viewport normalization and subset behavior remain separate.
+4. **Target-runtime proof — open:** Exercise the actual CPY_ALL binding in root and Emacs-style `copy-mode` with sentinel rows around the final prompt and whitespace-sensitive fixtures. Verify the clipboard omits the final prompt and later content while preserving all earlier content exactly.
+5. **Regression/coverage — open:** Run the tests through `./_test/run`, the complete suite, `test-runner coverage`, and `coverage report -m copy_executor.py copy_selector.py tmux.py`. Review actual output; previous 100% coverage does not substitute for a fresh result.
+6. **Docs/continuity — partially updated:** The implementation-research record now has a 2026-10-23 current-state update. Run `bash _docs/_continuity/check.sh copy-refactor` in the project checkout and record its real output.
 
 Deferred, not part of the active CPY_ALL gate: Patch Failed-specific subset selection. Explicitly out of current acceptance: `copy-mode-vi` and native tmux `load-buffer -w` clipboard delivery.
 
 ## Next action
 
-**Next action:** Add CPY_ALL-specific contract tests in `test_copy_entire_pane.py` for last-`P` prompt cutoff, multiple prompts, prompt-like `O` output, text after the final prompt, empty/missing boundaries, blank rows, trailing spaces, exact line endings, and unchanged clipboard on fail-closed cases; then run `./_test/run test_copy_entire_pane.py` and use results to drive the smallest selector/executor change.
+**Next action:** After syncing the updated main branch, run `./_test/run test_copy_entire_pane.py && ./_test/run test_copy_executor.py && ./_test/run test_pytest_clipboard.py && ./_test/run`, then run `test-runner coverage && coverage report -m copy_executor.py copy_selector.py tmux.py`; finally exercise the CPY_ALL binding from root and Emacs-style `copy-mode` with output/prompt sentinels and verify the Android clipboard preserves every pre-prompt character while excluding the final prompt and everything after it.

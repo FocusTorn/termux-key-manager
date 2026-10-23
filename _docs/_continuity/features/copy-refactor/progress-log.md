@@ -1068,3 +1068,33 @@ Interpretation: The remote migration is structurally coherent based on the conne
 Not established: Shell execution of `bash _docs/_continuity/check.sh copy-refactor`; implementation/test/runtime proof for the CPY_ALL final-prompt and exact-preservation contract.
 Next implication: Continue with Gate G2 using contract tests before production changes.
 Corrects: none
+
+
+## PL-0005 — 2026-10-23 — CPY_ALL contract tests exposed the source mismatch
+Status: FAIL
+Hypothesis/question: Does the prior CPY_ALL executor cut off the last prompt row and fail closed when the boundary is absent?
+Setup: Focused test slice populated from the source at the continuity checkpoint; prior `copy_executor.py` and `copy_selector.py` were unchanged.
+Action: Ran the new executor-level contract tests before changing production source:
+```sh
+pytest -q test_copy_entire_pane.py
+```
+Observed: The three behavior-level tests failed for expected reasons: the capture command still used `-pJ` rather than flagged `-pF`; the output included content that should have been cut off; and missing/empty prompt boundaries still caused a clipboard write.
+Interpretation: The contract tests detect the exact gap described in PL-0002; this was a valid RED result, not a syntax/setup failure.
+Not established: Termux behavior for the new flagged full-history capture.
+Next implication: Implement a pure last-P-row selector and route only CPY_ALL through it; leave viewport normalization and pytest subset behavior isolated.
+Corrects: none
+
+
+## PL-0006 — 2026-10-23 — CPY_ALL cutoff implementation passed focused tests
+Status: PASS
+Hypothesis/question: Can CPY_ALL use the last prompt-flagged row as an exclusive cutoff without normalizing its preceding text?
+Setup: Updated local staged copies of `copy_executor.py`, `copy_selector.py`, the revised executor tests, and new `test_copy_entire_pane.py`.
+Action: After the RED run, implemented the CPY_ALL selector and executor routing, then ran:
+```sh
+pytest -q test_copy_entire_pane.py test_copy_executor.py test_pytest_clipboard.py
+```
+Observed: **23 passed**. Cases cover last-prompt cutoff, earlier prompts, prompt-like output without P flags, text after the final prompt, missing/malformed boundaries, an empty selection, blank rows, trailing spaces, CRLF preservation, the clipboard payload, and the no-write failure path. The prior viewport and pytest subset contract tests also passed in this focused run.
+Interpretation: Source-level contract and focused mocked-executor behavior are supported. The test run is not the project wrapper, not the full suite, and not runtime evidence on Termux/tmux.
+Not established: The new `capture-pane -pF -S -` command's live full-history P/O flag behavior; actual CPY_ALL macro/clipboard behavior in the two accepted runtime contexts; fresh full-suite coverage.
+Next implication: Verify via `./_test/run` in the project checkout and perform target Termux runtime acceptance before marking G2 or G3 DONE.
+Corrects: none

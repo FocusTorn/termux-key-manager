@@ -27,17 +27,20 @@ def _commands(calls, prefix):
 
 
 def test_copy_entire_pane_uses_history_capture_and_proven_clipboard():
-    calls, fake_run = _mock_tmux("alpha  \nbeta\n\n")
+    capture_text = "O alpha  \r\nO beta\r\n-  \r\nPX current prompt\r\nX after prompt\r\n"
+    expected = "alpha  \r\nbeta\r\n \r\n"
+    calls, fake_run = _mock_tmux(capture_text)
     with patch("copy_executor.subprocess.run", side_effect=fake_run):
         assert copy_executor.execute_copy("copy_entire_pane", "%1") is True
     capture = _commands(calls, ["tmux", "capture-pane"])[0]
+    assert "-pF" in capture and "-J" not in capture
     assert "-S" in capture and capture[capture.index("-S") + 1] == "-"
     assert "-t" in capture and capture[capture.index("-t") + 1] == "%1"
     buffer_writes = [kwargs for command, kwargs in calls if command == ["tmux", "load-buffer", "-"]]
     clipboard = [kwargs for command, kwargs in calls if command == ["termux-clipboard-set"]]
     assert len(buffer_writes) == len(clipboard) == 1
-    assert buffer_writes[0]["input"] == "alpha\nbeta\n"
-    assert clipboard[0]["input"] == "alpha\nbeta\n"
+    assert buffer_writes[0]["input"] == expected
+    assert clipboard[0]["input"] == expected
 
 
 def test_copy_viewport_uses_visible_capture_and_shared_clipboard_path():
