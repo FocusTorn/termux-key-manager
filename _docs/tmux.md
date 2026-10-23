@@ -37,6 +37,17 @@ The three copy actions invoke `copy_executor.py` with the targeted
 `#{pane_id}`. Successful copies update the tmux paste buffer and Termux
 clipboard using `termux-clipboard-set`.
 
+All three use the same identity-aware duplicate-empty-prompt filter after
+their action-specific selection. The recognized prompt layout is a flagged
+`HHMM.SS | project/alias branch | Git status` context row followed by an
+empty `❯` row. The display-time field is ignored; project/alias, branch, and
+Git status define identity. Only consecutive empty prompts in that recognized
+format collapse. Command-bearing prompts and unfamiliar layouts are preserved.
+CPY_ALL still chooses its final `P`-flagged cutoff before filtering.
+
+The viewport capture includes tmux row flags (`-F`) so it can share the same
+filter; its existing viewport normalization remains unchanged.
+
 ## Mixed action sequences
 
 A definition can combine an input macro and a shell action:

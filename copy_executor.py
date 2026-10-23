@@ -4,12 +4,16 @@ import argparse
 import subprocess
 import sys
 
-from copy_selector import select_entire_pane, select_pytest_subset
+from copy_selector import (
+    select_entire_pane,
+    select_pytest_subset,
+    select_viewport,
+)
 
 
 _COPY_ACTIONS = {
     "copy_entire_pane": ("-pF", "-S", "-"),
-    "copy_viewport": ("-pJ",),
+    "copy_viewport": ("-pFJ",),
     "copy_subset": ("-pF", "-S", "-"),
 }
 
@@ -54,7 +58,8 @@ def execute_copy(action, pane_id):
         elif action == "copy_subset":
             output = select_pytest_subset(captured)
         else:
-            output = _normalize_pane_text(captured)
+            selected = select_viewport(captured)
+            output = _normalize_pane_text(selected) if selected is not None else None
 
         if not output:
             return False

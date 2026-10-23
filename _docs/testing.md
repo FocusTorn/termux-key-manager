@@ -8,6 +8,7 @@ behavior and the shared copy executor's contract.
 - `_test/test_manager.py`
 - `_test/test_pytest_clipboard.py`
 - `_test/test_copy_executor.py`
+- `_test/test_copy_prompt_dedup.py`
 - `_test/test_tmux_replacement.py`
 - `_test/test_shell_rc.py`
 
@@ -32,6 +33,14 @@ This suite tests the pure parser for flagged tmux capture rows. It covers:
 The selector does not call the clipboard. Clipboard-preservation behavior
 when the selector fails is covered by the executor contract tests.
 
+## test_copy_prompt_dedup.py
+
+This suite tests identity-aware removal of consecutive empty prompt rows.
+It verifies timestamp-only changes collapse, project/alias and Git-status changes
+preserve prompts, command-bearing prompts and unknown layouts remain untouched,
+and line endings/non-prompt whitespace are preserved. Executor-level cases cover
+all three copy actions and verify filtering follows their selection contracts.
+
 ## test_copy_executor.py
 
 This suite uses mocked subprocess calls to check whole-history and viewport
@@ -55,8 +64,12 @@ Run the full test suite from the repository root:
 The wrapper invokes pytest against `_test` and accepts zero or one test path.
 Focused examples:
 
+    ./_test/run static test_copy_prompt_dedup.py
     ./_test/run test_pytest_clipboard.py
     ./_test/run test_copy_executor.py
+
+For a fresh full-suite regression run, use `./_test/run force`; the default
+command is change-aware Testmon and may omit tests from the current invocation.
 
 The 2026-10-22 user-run coverage checkpoint reported 49 passed and 90% total
 statement coverage. The durable log preserves aggregate percentages but not

@@ -44,10 +44,11 @@ def test_copy_entire_pane_uses_history_capture_and_proven_clipboard():
 
 
 def test_copy_viewport_uses_visible_capture_and_shared_clipboard_path():
-    calls, fake_run = _mock_tmux("visible one\nvisible two\n")
+    calls, fake_run = _mock_tmux("O visible one\nO visible two\n")
     with patch("copy_executor.subprocess.run", side_effect=fake_run):
         assert copy_executor.execute_copy("copy_viewport", "%7") is True
     capture = _commands(calls, ["tmux", "capture-pane"])[0]
+    assert "-pFJ" in capture
     assert "-S" not in capture
     assert "-t" in capture and capture[capture.index("-t") + 1] == "%7"
     assert _commands(calls, ["tmux", "load-buffer", "-"])
@@ -94,7 +95,7 @@ def test_copy_subset_fails_closed_without_prompt_and_preserves_clipboard():
 
 
 def test_copy_from_copy_mode_exits_mode_after_copy():
-    calls, fake_run = _mock_tmux("line one\nline two\n", pane_mode="1")
+    calls, fake_run = _mock_tmux("O line one\nO line two\n", pane_mode="1")
     with patch("copy_executor.subprocess.run", side_effect=fake_run):
         assert copy_executor.execute_copy("copy_viewport", "%4") is True
     load_index = next(i for i, (command, _) in enumerate(calls) if command == ["tmux", "load-buffer", "-"])

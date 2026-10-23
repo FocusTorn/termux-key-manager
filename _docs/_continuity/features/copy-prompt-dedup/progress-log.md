@@ -28,3 +28,31 @@ Not established:
 Next implication: Inspect every shared-executor caller and the capture/rendering contract, then write pure selector tests for matching and differing prompt identities before implementing a shared filter.
 
 Corrects: none
+
+
+## PL-0002 — 2026-10-23 — Shared prompt filter and contract tests written
+
+Status: NOT TESTED
+
+Hypothesis/question: Can the shared copy path identify repeated empty prompts from captured prompt context while preserving different aliases/statuses and each action's range semantics?
+
+Setup: Repository `FocusTorn/termux-key-manager`; `main` at inspected baseline `193060412089c344397c9b92d4b0acc5c38b37e5`. Review intake found no pending snapshot: `for-review` had no `.review-id` and was behind `main`.
+
+Action: Inspected `copy_executor.py`, `copy_selector.py`, `tmux.py`, `macros.py`, copy tests, testing/architecture/tmux docs, the CPY_ALL PRD, and `copy-refactor` continuity records. Mapped the three actions to the shared executor. Wrote a shared prompt filter, routed every action through it after selection, requested row flags for viewport capture, added contract tests, and updated docs.
+
+Observed:
+- All copy actions converge on `copy_executor.py`; no `cpy_*` helper path is needed.
+- Whole-pane and subset capture use `capture-pane -pF -S -`. Viewport previously omitted `-F`, so it could not provide the same prompt identity markers; it now requests `-pFJ`.
+- The filter recognizes the supplied format: a P-flagged `HHMM.SS | project/alias branch | Git status` row followed by an empty `❯` row. It ignores changing display time and compares remaining visible identity fields. Repeated matching empty prompt segments collapse; differing alias/status, command-bearing prompts, prompt-like unflagged output, and unknown layouts are retained.
+- CPY_ALL selects its final P-flagged cutoff before deduplication; subset likewise selects its range before filtering. Existing per-action formatting rules remain.
+- Added tests for timestamp-only changes, project/alias and Git-status differences, command-bearing prompts, unknown layouts, CRLF/trailing whitespace, and all three executor actions.
+- The TKM repository does not define the user's shell prompt renderer, so live P-flag placement remains to be confirmed in target runtime.
+
+Not established:
+- The new or updated tests have not been executed.
+- Live Termux/tmux capture flags and clipboard behavior have not been observed.
+- Full-suite regression, coverage, and continuity-checker results remain NOT TESTED.
+
+Next implication: Run focused contract tests and fresh full-suite regression, then verify actual prompt-row flags and all three copy actions in Termux before acceptance.
+
+Corrects: PL-0001's open source-mapping task is advanced by this entry; no earlier evidence is replaced.

@@ -79,7 +79,7 @@ Discovers tmux actions declared by the source and generates the matching marked 
 
 ### copy_executor.py and copy_selector.py
 
-`copy_executor.py` handles whole-history, viewport, and semantic subset copies. It captures pane text, normalizes non-subset output, updates the tmux paste buffer and Termux clipboard, and exits copy mode after actions invoked there. `copy_selector.py` selects the latest valid pytest progress range before the final prompt-marked row and fails closed when boundaries are missing.
+`copy_executor.py` handles whole-history, viewport, and semantic subset copies. It captures pane text, applies the action-specific selector/normalizer, updates the tmux paste buffer and Termux clipboard, and exits copy mode after actions invoked there. `copy_selector.py` owns the protocol-bound whole-pane and pytest-range selectors plus the shared duplicate-empty-prompt filter. Each selected range is filtered before clipboard delivery; CPY_ALL still chooses its final prompt-flagged cutoff first. Viewport capture requests row flags so it uses the same filter while retaining its existing whitespace normalization.
 
 ### update.py
 

@@ -10,8 +10,8 @@ Update the main shared copy orchestrator so every copy action removes redundant 
 
 ## End state and acceptance criteria
 
-- [ ] Map every copy action and identify its capture, selection, and formatting stages; establish where prompt identity is available.
-- [ ] Define prompt identity from reliable available fields. At minimum, differing project/alias or Git status means prompts are distinct. Do not infer duplicates from blank input alone.
+- [x] Map every copy action and identify its capture, selection, and formatting stages; establish where prompt identity is available (PL-0002).
+- [x] Define prompt identity for the supplied visible prompt layout. Ignore changing display time; compare project/alias, branch, and Git status. Retain unfamiliar layouts rather than guessing (PL-0002).
 - [ ] Add a shared, deterministic filter that removes only redundant adjacent empty prompt rows with matching identity, including duplicates appearing above or below the retained row in the captured/copy range.
 - [ ] Apply the filter to every copy action through the main copy orchestrator/shared path; do not add per-action parallel implementations or revive legacy `cpy_*` helpers.
 - [ ] Preserve one representative of a run of matching empty prompts and preserve every non-empty prompt.
@@ -24,31 +24,31 @@ Update the main shared copy orchestrator so every copy action removes redundant 
 
 ## Synchronization
 
-**Progress through:** PL-0001
+**Progress through:** PL-0002
 
 `Progress through` is the newest actual log entry reviewed and reconciled here. Advance only after a material log entry is appended and reconciled.
 
 ## Gates
 
 ### G1 — Map copy orchestration and prompt identity
-**Status:** NOT STARTED
+**Status:** DONE (PL-0002)
 **Requires:** copy-refactor:G1
-**Exit condition:** All copy actions/callers and relevant capture/rendering stages are mapped; reliable prompt identity fields and their availability are documented.
-**Evidence:** PL-0001 records the initial examples and open inspection questions.
-**Remaining:** Inspect the orchestrator, selector, executor, every caller, prompt theme/rendering, and current tests.
+**Exit condition:** All copy actions/callers and relevant capture/rendering stages are mapped; available prompt identity fields and their limits are documented.
+**Evidence:** PL-0002 maps all three callers and the capture-to-clipboard path, and documents the visible identity fields plus the lack of a source-controlled prompt renderer.
+**Remaining:** No source-mapping work remains; confirm live P-flag placement as part of G3 runtime acceptance.
 
 ### G2 — Shared filter and contract tests
-**Status:** NOT STARTED
-**Requires:** G1
-**Exit condition:** A shared filter and tests prove matching duplicate empty prompts collapse to one, distinct prompt identities survive, and all other text is preserved.
-**Evidence:** none yet.
-**Remaining:** Establish contracts first; implement only after the available representation supports safe identity comparison.
+**Status:** IN PROGRESS
+**Requires:** G1 (DONE, PL-0002)
+**Exit condition:** The shared filter and contract tests pass, proving that matching duplicate empty prompts collapse to one, distinct identities survive, and all other text is preserved.
+**Evidence:** PL-0002 records the filter and tests written; execution remains NOT TESTED.
+**Remaining:** Execute the focused contract tests and address any failures before considering this gate DONE.
 
 ### G3 — Integration, regression, and runtime acceptance
 **Status:** NOT STARTED
 **Requires:** G2
 **Exit condition:** Every copy action routes through the shared filter; focused and full regression tests, relevant coverage, and target Termux/tmux runtime checks pass; continuity and user documentation agree.
-**Evidence:** none yet.
+**Evidence:** PL-0002 records source-level boundary handling; test execution and target-runtime acceptance remain open.
 **Remaining:** Exercise every copy action, including CPY_ALL, in accepted runtime contexts; confirm the final distinct prompt remains and redundant matching empty prompts do not.
 
 ## Blocked
@@ -67,22 +67,31 @@ Open alternatives/questions: Determine the strongest reliable structured identit
 
 ### D-002 — Filter all copy actions in the shared path [ACTIVE]
 Problem/requirement: The behavior must be consistent across every copy action.
-Chosen approach: Integrate one filter into the main copy orchestrator/shared path after mapping the action flow and before clipboard delivery, without duplicating implementations.
-Why this approach: A common policy in the common path avoids inconsistent action-specific behavior.
-Evidence / authorization: User clarification on 2026-10-23; PL-0001.
+Chosen approach: Use one shared filter from action-specific selectors after each action's selection; add row flags to viewport capture so all three actions have prompt markers.
+Why this approach: A common selector-layer policy avoids inconsistent action-specific implementations while preserving existing range rules.
+Evidence / authorization: User clarification on 2026-10-23; PL-0001 and PL-0002.
 Constraints that must survive: Apply to all copy actions, keep each action's existing selection/cutoff contract, and do not revive the retired `cpy_*` helper family.
-Open alternatives/questions: Exact insertion point depends on the inspection in G1.
+Open alternatives/questions: Runtime capture still needs to confirm the P-flag placement in the active multi-line prompt.
+
+### D-003 — Ignore volatile time; preserve unfamiliar prompt layouts [ACTIVE]
+Problem/requirement: Display-time changes alone must not prevent duplicate prompts from collapsing, while unsupported row layouts must not be guessed into duplicates.
+Chosen approach: For the supplied `HHMM.SS | project/alias branch | Git status` row format, compare all fields after the timestamp; require the following row to be exactly the empty `❯` input.
+Why this approach: The timestamp changes independently of prompt identity. Project/alias, branch, and Git status distinguish the prompts shown in the user's example.
+Evidence / authorization: User-provided example and PL-0002 source/test work.
+Constraints that must survive: If the context row does not match the known format, or the prompt input is not empty, preserve it. Runtime confirmation of P-flag placement remains open.
+Open alternatives/questions: If the active shell's prompt renderer changes layout, expand the parser only with a captured example and tests.
 
 ## Complete remaining-work inventory
 
-1. Inspect the main copy orchestrator and all copy action entry points.
-2. Establish how empty prompt rows and prompt identity fields are represented at each relevant stage.
-3. Write behavior-first unit tests for matching duplicates, above/below positions, differing alias/project, differing Git status, and content preservation.
-4. Implement one shared identity-aware filter and route every action through it.
-5. Verify interaction with CPY_ALL's P-flag final-prompt cutoff and empty/malformed boundary behavior.
-6. Run focused project-runner tests, full regression suite, relevant coverage, and target Termux/tmux checks for every action.
-7. Update architecture/development docs and record results; run `bash _docs/_continuity/check.sh copy-prompt-dedup`.
+1. **Source mapping — complete:** Map all three callers, shared executor, selectors, and clipboard path (PL-0002). The shell prompt renderer is external to this repository.
+2. **Runtime identity confirmation — open:** Inspect actual `capture-pane -pF -S -` output on target Termux/tmux and confirm the P flag marks the context row used by the current two-line prompt.
+3. **Focused contract tests — written / NOT TESTED:** Run the new duplicate-prompt tests and existing selector/executor tests; address failures.
+4. **Implementation validation — open:** Confirm matching empty prompt groups collapse to one and differing project/alias or Git status, command-bearing prompts, and unknown formats remain unchanged.
+5. **CPY_ALL boundary interaction — source/test written / NOT TESTED:** Confirm the final P-flag cutoff is selected before deduplication, including empty/malformed boundary fail-closed behavior.
+6. **Regression and coverage — open:** Run `./_test/run force` for fresh full-suite execution and `./_test/run coverage` for fresh coverage results.
+7. **Target runtime — open:** Exercise all three actions in accepted root and Emacs-style `copy-mode` contexts; verify exact clipboard content, preserving distinct alias/status prompts while removing only redundant matching empty prompts. `copy-mode-vi` remains out of scope.
+8. **Continuity verification — open:** Run `bash _docs/_continuity/check.sh copy-prompt-dedup` in the project checkout and record its actual output.
 
 ## Next action
 
-**Next action:** Inspect `copy_executor.py`, `copy_selector.py`, `tmux.py`, every copy-action caller, prompt configuration/rendering, and related tests; document the capture-to-clipboard path and available prompt identity fields before writing the filter implementation.
+**Next action:** In the project checkout, run `./_test/run static test_copy_prompt_dedup.py`, then `./_test/run force` for a fresh full-suite regression and `./_test/run coverage` for coverage; run `bash _docs/_continuity/check.sh copy-prompt-dedup`, then verify all three copy actions in target Termux/tmux with identical-context empty prompts, timestamp-only changes, alias/status changes, and command-bearing prompts.
