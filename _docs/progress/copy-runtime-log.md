@@ -32,6 +32,9 @@ from the Termux environment. Source-level analysis is recorded in
 | Interpret tmux 3.8 `W`/`X` flags | **PASS** | `X` appeared on Unicode prompt rows and `WX` on a wrapped line; tmux 3.8 maps `W` to wrapped and `X` to extended cells |
 | Pytest semantic selector | **PASS (user-reported)** | The user reported the focused `test_pytest_clipboard.py` run as green on 2026-10-22 |
 | Missing-marker and failure behavior | **TESTS ADDED; RUN PENDING** | Tests cover absent prompt, absent valid progress before the prompt, malformed rows, and prompt-like output without a `P` flag |
+| Production `copy_entire_pane` via CPY_ALL | **PASS** | Fresh clipboard sentinel verified from root and emacs-style copy mode |
+| Production `copy_subset` via CPY_TEST | **PASS** | Progress and end markers included; preceding marker excluded from root and copy-mode results |
+| Production `copy_viewport` via the COPY popup | **PASS** | Visible sentinel included and older scrollback sentinel excluded from root and copy-mode results |
 | Native tmux terminal clipboard path without an external command | **NOT TESTED** | The passing clipboard tests used `termux-clipboard-set` as the pipe command |
 
 ## 1. Clipboard utility sanity check
@@ -766,3 +769,55 @@ live production copy behavior.
 production copy actions from root and emacs-style `copy-mode`, checking
 selected text, Termux clipboard contents, and mode exit. Keep Gate 5 open
 until the required runtime checks pass.
+
+
+## 24. Production macro runtime matrix passed (2026-10-22)
+
+**Setup:** The user exercised the production TKM macro bindings in live
+Termux/tmux. CPY_ALL invokes `copy_entire_pane`; the `COPY` popup on CPY_ALL
+invokes `copy_viewport`; and CPY_TEST invokes `copy_subset`. Root-mode
+checks used fresh sentinels and read them back with
+`termux-clipboard-get`. Copy-mode checks were armed before entering copy
+mode so no follow-up pasted command could overwrite the clipboard under test.
+
+| Production action | Root | Emacs-style `copy-mode` |
+|---|---|---|
+| `copy_entire_pane` — CPY_ALL | **PASS** — the fresh root sentinel was found in the Termux clipboard | **PASS** — the copy-mode sentinel was found and the output explicitly reported that CPY_ALL exited copy mode automatically |
+| `copy_subset` — CPY_TEST | **PASS** — clipboard contained `... [100%]` and the end sentinel; the before sentinel was absent | **PASS** — the armed checker verified the progress and end markers, excluded the before sentinel, and returned to the shell after the macro |
+| `copy_viewport` — CPY_ALL's `COPY` popup | **PASS** — the visible sentinel was present and the older scrollback sentinel was absent | **PASS** — the final checker observed copy-mode exit, found the visible sentinel, excluded the older scrollback sentinel, and printed a PASS result |
+
+**Observed:** All six production action/context checks reported PASS. The
+copy-mode viewport capture also included other shell text that was visible in
+the viewport; that is expected for a viewport copy. The acceptance assertion
+was that the fresh visible marker was present and the intentionally older
+marker was absent.
+
+**Interpretation:** the required production runtime matrix is now demonstrated
+for root and emacs-style `copy-mode`. This does not extend the acceptance
+scope to `copy-mode-vi`, prove the native tmux `load-buffer -w` clipboard
+path, or demonstrate live selection of a real `Patch Failed` range.
+
+### Harness corrections and preserved uncertainty
+
+Early copy-mode viewport attempts were not used as product-failure evidence:
+one attempt did not reliably establish that the earlier marker was off-screen,
+and another checker was suspended by interactive shell job control. A later
+Zsh test block also hit history expansion while validating a shell pattern.
+The final successful viewport trial used 60 filler lines, printed the visible
+sentinel immediately before entering copy mode, detached the background
+checker from terminal input, and reported that the older marker was absent.
+These setup problems explain why the earlier attempts were inconclusive; they
+do not override the final observed PASS.
+
+### Coverage follow-up note
+
+A static review of the current executor, selector, and tests identified
+candidate edge cases that do not have explicit assertions in the inspected
+test files: missing `pane_id`, empty non-subset capture output, subprocess
+failures during tmux/clipboard operations, and selector parsing for CRLF or
+an unterminated final row. The last full coverage run reported 75% statement
+coverage for `copy_executor.py`, 88% for `copy_selector.py`, and 94% for
+`tmux.py`; however, its line-level missing-coverage report was not retained
+in this repository's evidence. These cases are candidates for review, not
+claims about exact uncovered lines. Gate 6 carries the line-specific coverage
+audit forward.

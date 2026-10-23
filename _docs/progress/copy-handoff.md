@@ -3,138 +3,84 @@
 **Snapshot date:** 2026-10-22  
 **Repository:** FocusTorn/termux-key-manager  
 **Branch:** main  
-**Implementation:** Focused tests user-reported green; full coverage target passed (49 tests, 90% total statement coverage); production configuration and live copy-action runtime verification pending
+**Implementation:** The shared executor and selector are committed. The full coverage target reported 49 passed and 90% total statement coverage. All three production copy actions passed runtime checks from root and emacs-style `copy-mode`; the Gate 5 runtime acceptance criteria are met. Line-specific coverage review and final repository audit remain.
 
 ## Mission
 
-Replace TKM's cpy_* shell-helper copy behavior with native tmux actions. The
-target has one shared copy executor and three callers: copy_entire_pane,
-copy_viewport, and copy_subset. There must be no legacy fallback or second
-implementation.
+Replace TKM's legacy `cpy_*` shell-helper behavior with one shared native tmux
+copy executor and three callers: `copy_entire_pane`, `copy_viewport`, and
+`copy_subset`. There must be no legacy fallback or second implementation.
 
 ## Read these files first
 
-1. [Progress workspace guide](README.md) — rules for keeping this handoff,
-   the log, and roadmap synchronized.
-2. [Copy roadmap](copy-roadmap.md) — current gate order and exit conditions.
-3. [Copy runtime progress log](copy-runtime-log.md) — observed tests and
-   failed/inconclusive trials.
+1. [Progress workspace guide](README.md) — roles and update order for the
+   handoff, roadmap, and runtime log.
+2. [Copy roadmap](copy-roadmap.md) — current gates and remaining work.
+3. [Copy runtime progress log](copy-runtime-log.md) — observed runtime evidence
+   and important test-harness corrections.
 4. [R1.1 tmux internals](../research/r1_1-tmux-internals.md) and
    [R1.2 TKM implications](../research/r1_2-tkm-implications.md) — source
    analysis and architecture constraints.
 
-## What is proven
+## Current verified state
 
-- Manual tmux copy-mode selection copied the available pane history, the
-  visible viewport, and an explicitly selected three-line range.
-- The Termux clipboard utilities work, and the copy-pipe-and-cancel path to
-  termux-clipboard-set copied manually selected text.
-- In an isolated attached client, root-table Ctrl+G invoked a visible
-  display-message binding.
-- A root binding entered copy mode.
-- A chained root binding, copy-mode followed by send-keys -X history-top,
-  entered copy mode and moved the cursor to 1,1.
-- The root Ctrl+G test binding started selection at history-top; after moving
-  down and to line end, fixture lines 1–2 were visibly highlighted.
-- The isolated root Ctrl+G binding copied exactly TKM_CONTEXT_BEFORE and
-  TKM_CONTEXT_START to the Android clipboard through the copy pipe. The
-  selected buffer has no trailing newline.
-- A separate isolated Ctrl+G binding in the `copy-mode` table (with
-  `mode-keys emacs`) copied the same two lines to Android clipboard, left the
-  matching tmux paste buffer, and exited copy mode (`PANE_IN_MODE=0`). The
-  clipboard output had no trailing newline after `TKM_CONTEXT_START`.
+- `copy_executor.py` is the shared executor for `copy_entire_pane`,
+  `copy_viewport`, and `copy_subset`. It captures through tmux, loads
+  successful text into the tmux paste buffer, writes it with
+  `termux-clipboard-set`, and cancels copy mode after actions initiated there.
+- The production macro runtime matrix passed for all six action/context pairs:
 
-These are test bindings and manually selected ranges, not a completed TKM
-implementation. Root and `copy-mode` have passed. `copy-mode-vi` is explicitly
-out of scope by the 2026-10-17 decision below. Live OSC 133 integration was
-confirmed on 2026-10-22: the user's capture showed `PX` on the prompt top-rule
-row and `O` on `TKM_OSC133_OUTPUT_PROBE`. This confirms the flag path in the
-target shell, not semantic selection or production action integration.
+  | Action | Root | Emacs-style `copy-mode` |
+  |---|---|---|
+  | `copy_entire_pane` / CPY_ALL | PASS | PASS |
+  | `copy_subset` / CPY_TEST | PASS | PASS |
+  | `copy_viewport` / CPY_ALL's COPY popup | PASS | PASS |
 
-## Most recent correction
+  Fresh clipboard sentinels and subset/viewport boundaries were checked.
+  The copy-mode tests returned to the shell; CPY_ALL's copy-mode run explicitly
+  reported automatic mode exit. Full evidence is in Runtime Log §24.
+- The user-run `test-runner coverage` command reported **49 passed in 0.47s**
+  and **90% total statement coverage**. Aggregate module coverage was
+  `copy_executor.py` 75%, `copy_selector.py` 88%, and `tmux.py` 94%
+  (Runtime Log §23).
+- The focused selector and executor runs were reported green. Live OSC 133
+  integration was also confirmed: the user's capture showed `PX` on the
+  prompt top-rule row and `O TKM_OSC133_OUTPUT_PROBE` on the output row
+  (Runtime Log §15).
 
-The isolated fixture used sleep 300 (five minutes). The run created around
-03:18 and attached around 03:23 returned [exited], matching expiration of the
-foreground test command. The missing server is therefore best explained by
-the fixture ending, not by copy-mode behavior. Ctrl+B, then D, returns the
-client to Termux by detaching; do not treat that alone as evidence that the
-server was killed.
+## Remaining work and constraints
 
-An earlier all-in-one binding did not place the expected markers on the
-clipboard; it placed literal termux-clipboard-get command text there. That
-trial remains inconclusive because the correct binding/client/pane state was
-not established throughout the attempt.
+- Gate 6: inspect the line-specific missing-coverage report from the last
+  coverage run if available; otherwise rerun the coverage target and capture
+  the detailed missing-line output or report path. The durable log currently
+  contains aggregate percentages only.
+- Gate 6: audit remaining `cpy_*` references, remove any obsolete live
+  definitions/calls, and verify final diff, ref state, and commit history.
+- Source/test inspection suggests edge cases worth checking include a missing
+  `pane_id`, empty non-subset capture output, tmux/clipboard subprocess
+  failures, and CRLF or unterminated final rows in selector parsing. These are
+  candidates, not confirmed exact coverage misses.
+- `Patch Failed` subset selection remains deferred. The production subset
+  runtime check used a controlled progress marker, not a real `Patch Failed`
+  output range.
+- `copy-mode-vi` is explicitly out of scope. Do not run another vi-mode proof
+  or imply behavior there has been verified.
+- tmux's native `load-buffer -w` terminal clipboard path remains untested;
+  retain the proven `termux-clipboard-set` endpoint.
+- Distinguish runtime evidence from source/test inspection. Do not mark the
+  line-specific coverage audit complete from aggregate percentages alone.
 
-The direct multi-command `bind-key` invocation at the outer zsh prompt returned
-`not in a mode`. Loading the binding from a tmux configuration file with
-`source-file` registered the command list correctly. The selection-only
-binding visibly highlighted the first two fixture lines.
+## Fixed workflow constraints
 
-The subsequent binding added `copy-pipe-and-cancel 'termux-clipboard-set'`.
-The first clipboard check remained empty, so that attempt was inconclusive.
-A later retry superseded that state for the isolated root-binding path: the
-server was recreated from the outer Termux shell (with `TMUX` unset), the
-binding was loaded and verified, and a subsequent attach/copy/detach cycle
-returned exactly `TKM_CONTEXT_BEFORE` and `TKM_CONTEXT_START`. The buffer
-was 36 bytes with no trailing newline, matching the clipboard output. The
-cause of the initial empty read remains unknown; the end-to-end root binding
-is now **PASS**. The user confirmed seeing `TKM-PROOF:proof` in the attached
-Test Session and pressing Ctrl+G there, resolving the earlier ambiguity about
-where the interactive trial occurred. The later `copy-mode` trial also passed;
-`copy-mode-vi` and TKM bindings remain untested.
+- Record observed evidence in the runtime log first, reconcile the roadmap
+  second, and refresh this handoff last.
+- Preserve failures, inconclusive trials, and setup corrections instead of
+  rewriting the sequence to look clean.
+- No future scope change without behavior contracts and relevant tests.
+- Continue using the repository's connected GitHub workflow for remote
+  commits; check the current branch tip and affected blob SHAs before mutation.
 
-## Immediate next action
-
-The live OSC 133 proof passed on 2026-10-22. The user's capture included
-`PX` on the prompt top-rule row and `O TKM_OSC133_OUTPUT_PROBE` on the output
-row. The `X` and `W` flags describe extended cells and wrapping; they are not
-prompt boundaries.
-
-A pure parser has been added in `copy_selector.py`:
-- Finds the latest valid pytest progress row ending in `[100%]` before the
-  final prompt-flagged row.
-- Removes tmux flag prefixes while preserving selected text and line endings.
-- Returns `None` on missing boundaries or malformed capture rows. Callers must
-  leave the clipboard unchanged on `None`.
-
-Focused tests in `_test/test_pytest_clipboard.py` cover latest-run selection,
-blank/multiline evidence, missing boundaries, prompt-like output without `P`,
-and malformed rows. The user reported the corrected focused run as green.
-The earlier runner rejection was an invalid invocation, not a test failure.
-
-A shared `copy_executor.py` now serves `copy_entire_pane`, `copy_viewport`,
-and `copy_subset`. It uses tmux capture, preserves the tmux paste buffer with `load-buffer -`, and
-uses the proven `termux-clipboard-set` endpoint. It leaves the clipboard
-unchanged when subset boundaries fail,
-and exits copy mode after actions invoked there. Executor tests and production
-binding tests have been added. The first executor test run reported 1 failure
-and 5 passes: the test expected a standalone `-F` argv element, while the
-executor uses the documented combined `-pF` argument. The test assertion has
-been corrected, and the user has now reported the focused rerun green.
-The full coverage run then completed with `49 passed in 0.47s` and 90%
-total statement coverage. `copy_executor.py` was at 75%, `copy_selector.py`
-at 88%, and `tmux.py` at 94%. See Runtime Log §23. The earlier f-string
-assertion failure is resolved. Production configuration inspection and live
-copy-action runtime verification remain pending.
-
-**Next action — run from the TKM repository root:**
-
-```sh
-./_test/run
-```
-
-Inspect the generated configuration in Termux and review the uncovered
-copy-related branches. Then runtime-test the production actions from root and
-emacs-style `copy-mode`, checking selected text, clipboard contents, and mode
-exit. `copy-mode-vi` remains out of scope, and `Patch Failed` selection remains
-deferred.
-
-## Constraints
-
-- No TKM source changes until behavior contracts are understood and tests are
-  written first.
-- Explicitly distinguish PASS, FAIL, INCONCLUSIVE, invalid setup, and
-  untested behavior.
-- Never infer that an operation works just because its binding is stored.
-- Keep selection, semantic boundary discovery, mode behavior, and clipboard
-  output as independently verified stages.
+**Next action:** Inspect line-specific coverage gaps from the last
+`test-runner coverage` report (the durable log currently contains aggregate
+percentages only), then audit remaining `cpy_*` references and verify the
+final diff, branch state, and commit history.

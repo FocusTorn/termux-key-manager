@@ -1,7 +1,7 @@
 # Native Tmux Copy Refactor — Roadmap
 
 **Status updated:** 2026-10-22  
-**Implementation status:** Focused selector/executor tests are user-reported green, and the full coverage run completed with 49 passed and 90% total statement coverage. The earlier Testmon-selected run's f-string `NameError` is resolved by the test-source correction; see [Runtime Log §§22–23](copy-runtime-log.md#23-full-coverage-test-run-passed-2026-10-22). Production Termux configuration and live copy-action runtime verification remain pending.
+**Implementation status:** The full coverage run passed 49 tests with 90% total statement coverage, and all three production actions passed runtime checks from root and emacs-style copy mode. See [Runtime Log §24](copy-runtime-log.md#24-production-macro-runtime-matrix-passed-2026-10-22). Line-specific coverage review and final repository audit remain in Gate 6.
 
 ## Objective
 
@@ -206,12 +206,18 @@ reported the focused positive/negative selector tests green.
 
 ### Gate 5 — Integrate selector into the native copy executor
 
-**Status: implementation committed; runtime verification pending.** The
+**Status: runtime acceptance criteria met; line-specific coverage review and final repository audit are carried into Gate 6.** The
 shared `copy_executor.py` now dispatches whole-pane, viewport, and pytest
 subset copies. Macro bindings call it directly, and generated `helpers.sh`
 no longer contains the legacy `cpy_*` functions. Successful copies update the
 tmux paste buffer and send the same text to `termux-clipboard-set`. The
 selector fails closed when required prompt/progress boundaries are absent.
+
+The production macro runtime matrix now passes for all three callers from
+both required contexts: CPY_ALL for `copy_entire_pane`, CPY_TEST for
+`copy_subset`, and CPY_ALL's COPY popup for `copy_viewport`. Clipboard
+sentinels and selection boundaries were checked; the copy-mode actions
+returned to the shell. See [Runtime Log §24](copy-runtime-log.md#24-production-macro-runtime-matrix-passed-2026-10-22).
 
 The first user-run `./_test/run test_copy_executor.py` reported **1 failed, 5 passed** because the assertion expected a standalone `-F` argv element while the executor sends the documented combined `-pF` option. The assertion was corrected, and the user subsequently reported the focused rerun green; see [Runtime Log §§20–21](copy-runtime-log.md#21-focused-executor-test-rerun-reported-green-2026-10-22). This remains mocked contract-test evidence, not production runtime proof.
 
@@ -225,9 +231,11 @@ The subsequent Testmon-selected run failed before the expected-config comparison
 - [x] Re-run the focused executor tests after correcting the combined `-pF` assertion (user-reported green; Runtime Log §21).
 - [x] Investigate and correct the f-string assertion failure in the Testmon-selected run (Runtime Log §22).
 - [x] Run the full coverage test target after the correction: `test-runner coverage`, 49 passed, 90% total statement coverage (Runtime Log §23).
-- [ ] Verify the generated configuration in Termux and inspect remaining coverage gaps relevant to copy actions.
-- [ ] Runtime-test the production actions from root and emacs-style
-  `copy-mode`, including clipboard contents and mode exit.
+- [x] Exercise the generated production bindings in Termux through all
+  three live macro callers; see Runtime Log §24.
+- [x] Runtime-test all production actions from root and emacs-style
+  `copy-mode`, including clipboard boundaries and mode return; see Runtime
+  Log §24.
 
 The native tmux `load-buffer -w` clipboard path remains untested; the executor
 uses the already-proven `termux-clipboard-set` endpoint instead. The
@@ -239,12 +247,23 @@ production actions are runtime-verified in both required contexts.
 
 ### Gate 6 — Regression and repository verification
 
-- Run focused copy-action regression tests.
-- Run the repository's broader required test/validation commands.
-- Inspect all remaining cpy_* references and remove obsolete calls and
+- [x] Run focused copy-action regression tests; selector and executor focused
+  runs were user-reported green (Runtime Log §§17, 21).
+- [x] Run the repository's broader test target: `test-runner coverage`
+  reported 49 passed and 90% total statement coverage (Runtime Log §23).
+- [ ] Inspect line-specific coverage gaps from the emitted coverage report.
+  The durable record contains aggregate percentages but not the missing-line
+  report. Review the current candidates in Runtime Log §24 without assuming
+  they are the exact uncovered lines.
+- [ ] Inspect all remaining `cpy_*` references and remove obsolete calls and
   definitions.
-- Verify the diff, working/ref state, and commit history before calling the
-  refactor complete.
+- [ ] Verify the diff, working/ref state, and commit history before calling
+  the refactor complete.
+
+**Next action:** Inspect line-specific coverage gaps from the last
+`test-runner coverage` report (the durable log currently contains aggregate
+percentages only), then audit remaining `cpy_*` references and verify the
+final diff, branch state, and commit history.
 
 **Exit condition:** all three callers use the central native executor, all
 required tests pass, and no legacy copy path remains.
