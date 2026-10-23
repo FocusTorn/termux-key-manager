@@ -1,51 +1,20 @@
 #!/usr/bin/env bash
+# Thin adapter for the shared test-runner.
+# Do NOT add argument parsing, path validation, or mode handling here;
+# test-runner owns all of that. Forward "$@" unchanged.
+# Only edit the project setting below.
 set -o errexit
 set -o nounset
 set -o pipefail
 
 readonly suite_directory="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 readonly project_root="$(dirname -- "$suite_directory")"
-readonly test_runner="$HOME/bin/test-runner"
 
-# Source paths are resolved from the project root; absolute paths stay absolute.
-source_dir_relative=''
+# Project setting: Python source dir, relative to the project root
+# (or absolute). Empty means none.
+readonly source_dir=''
 
 runner_args=(--working-dir "$project_root")
-if [[ -n "$source_dir_relative" ]]; then
-    if [[ "$source_dir_relative" = /* ]]; then
-        source_dir="$source_dir_relative"
-    else
-        source_dir="$project_root/$source_dir_relative"
-    fi
-    [[ -d "$source_dir" ]] || {
-        printf '_test/run: source directory not found: %s\n' "$source_dir" >&2
-        exit 1
-    }
-    runner_args+=(--source-dir "$source_dir")
-fi
+[[ -z "$source_dir" ]] || runner_args+=(--source-dir "$source_dir")
 
-if (( $# > 1 )); then
-    printf '_test/run: expected zero or one test path, got %s arguments\n' "$#" >&2
-    exit 2
-fi
-
-if (( $# == 0 )); then
-    test_path="$suite_directory"
-else
-    requested_test_path="$1"
-    if [[ -z "$requested_test_path" ]]; then
-        printf '_test/run: test path must not be empty\n' >&2
-        exit 2
-    elif [[ "$requested_test_path" = /* ]]; then
-        test_path="$requested_test_path"
-    elif [[ -e "$project_root/$requested_test_path" ]]; then
-        test_path="$project_root/$requested_test_path"
-    elif [[ -e "$suite_directory/$requested_test_path" ]]; then
-        test_path="$suite_directory/$requested_test_path"
-    else
-        printf '_test/run: test path not found: %s\n' "$requested_test_path" >&2
-        exit 1
-    fi
-fi
-
-exec "$test_runner" "${runner_args[@]}" "$test_path"
+exec "${TEST_RUNNER:-$HOME/bin/test-runner}" "${runner_args[@]}" "$suite_directory" "$@"
