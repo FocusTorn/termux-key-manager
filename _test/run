@@ -12,7 +12,7 @@ readonly project_root="$(dirname -- "$suite_directory")"
 
 # Project setting: Python source dir, relative to the project root
 # (or absolute). Empty means none.
-readonly source_dir=''
+readonly source_dir='.'
 
 runner_args=(--working-dir "$project_root")
 [[ -z "$source_dir" ]] || runner_args+=(--source-dir "$source_dir")
