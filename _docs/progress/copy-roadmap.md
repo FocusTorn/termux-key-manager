@@ -247,6 +247,8 @@ production actions are runtime-verified in both required contexts.
 
 ### Gate 6 — Regression and repository verification
 
+**Status: DONE — coverage and repository-state audit passed (Runtime Log §29).**
+
 - [x] Run focused copy-action regression tests; selector and executor focused
   runs were user-reported green (Runtime Log §§17, 21).
 - [x] Run the repository's broader test target: `test-runner coverage`
@@ -265,13 +267,13 @@ production actions are runtime-verified in both required contexts.
 - [x] Reconcile the nine stale operational guides with the current executor
   and key mappings (Runtime Log §25). Historical research and append-only logs
   retain legacy names intentionally.
-- [ ] Verify the diff, working/ref state, and commit history before calling
-  the refactor complete.
+- [x] Verify the corrected focused coverage report, clean local/remote
+  branch state, diff checks, and recent commit history (Runtime Log §29).
 
-**Next action:** Run `g l && coverage report -m copy_executor.py copy_selector.py tmux.py && git status --short --branch && git branch -vv && git diff --check && git diff --cached --check && git log -5 --oneline --decorate`
-from the TKM repository root. Confirm the corrected report includes all three
-modules, the local branch is synchronized and clean, both diff checks pass,
-and the recent history matches the verified remote sequence.
+**Next action:** None for the accepted copy-refactor scope. Any future
+work on `Patch Failed`-specific subset selection should be scoped and tested
+separately. Keep the native tmux `load-buffer -w` clipboard path and
+`copy-mode-vi` proof explicitly out of scope unless authorized scope changes.
 
 **Exit condition:** all three callers use the central native executor, all
 required tests pass, and no legacy copy path remains.
