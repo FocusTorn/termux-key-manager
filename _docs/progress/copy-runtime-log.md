@@ -888,3 +888,49 @@ then issue the command above.
 temporary JSON report. The line-specific coverage audit remains NOT TESTED
 until the command output is observed; candidate missed branches recorded in
 Section 24 remain hypotheses until compared with that output.
+
+
+## 27. Detailed coverage report received and mapped (2026-10-22)
+
+**User-run command:** `coverage report -m copy_executor.py copy_selector.py tmux.py`
+
+**Observed result: PASS — detailed missing-line report retrieved.**
+
+```text
+Name               Stmts   Miss Branch BrPart  Cover   Missing
+--------------------------------------------------------------
+copy_executor.py      52     14     16      1    75%   40, 74-88
+copy_selector.py      35      4     16      2    88%   9-10, 15-16
+tmux.py               74      4     28      2    94%   63-64, 103, 124
+--------------------------------------------------------------
+TOTAL                161     22     60      5    87%
+```
+
+This focused report covers these three modules only, so its 87% aggregate
+should not be compared to the earlier full-suite 90% total, which used a
+different set of files/statements.
+
+### Exact uncovered statements
+
+- `copy_executor.py:40`: rejecting a missing `pane_id`.
+- `copy_executor.py:74-88`: CLI parser/dispatch success, handled error, and
+  no-content return paths in `main()`.
+- `copy_selector.py:9-10`: CRLF row-ending parsing.
+- `copy_selector.py:15-16`: rows without a final newline.
+- `tmux.py:63-64`: rejecting an unknown tmux action name.
+- `tmux.py:103`: config generation when `.tmux.conf` does not yet exist.
+- `tmux.py:124`: inserting a separator when an existing config lacks a final
+  newline.
+
+### Targeted regression cases added
+
+Added tests for the exact uncovered paths in `test_copy_executor.py`,
+`test_pytest_clipboard.py`, `test_manager.py`, and
+`test_tmux_replacement.py`. These additions are **NOT TESTED** until the user
+runs the coverage command again. Branch coverage still requires the refreshed
+report; this report identifies missing statements, not every unvisited branch
+destination.
+
+**Next implication:** statement misses now have explicit regression coverage
+proposals. Re-run the full coverage target and inspect the refreshed missing
+lines and branch counts before changing the coverage audit to PASS.

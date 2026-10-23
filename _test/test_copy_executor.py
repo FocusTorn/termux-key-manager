@@ -105,3 +105,30 @@ def test_unknown_copy_action_is_rejected_before_tmux_calls():
         with pytest.raises(ValueError, match="unknown copy action"):
             copy_executor.execute_copy("copy_legacy", "%1")
     assert calls == []
+
+
+def test_execute_copy_requires_pane_id_before_tmux_calls():
+    calls, fake_run = _mock_tmux("unused\n")
+    with patch("copy_executor.subprocess.run", side_effect=fake_run):
+        with pytest.raises(ValueError, match="pane_id is required"):
+            copy_executor.execute_copy("copy_entire_pane", "")
+    assert calls == []
+
+
+def test_main_returns_zero_when_copy_succeeds():
+    with patch("copy_executor.execute_copy", return_value=True) as execute:
+        assert copy_executor.main(["copy_viewport", "%9"]) == 0
+    execute.assert_called_once_with("copy_viewport", "%9")
+
+
+def test_main_reports_executor_error(capsys):
+    failure = subprocess.CalledProcessError(1, ["tmux", "capture-pane"])
+    with patch("copy_executor.execute_copy", side_effect=failure):
+        assert copy_executor.main(["copy_entire_pane", "%1"]) == 1
+    assert "TKM copy failed:" in capsys.readouterr().err
+
+
+def test_main_reports_skip_when_no_content(capsys):
+    with patch("copy_executor.execute_copy", return_value=False):
+        assert copy_executor.main(["copy_subset", "%1"]) == 1
+    assert "TKM copy skipped: no valid content range" in capsys.readouterr().err

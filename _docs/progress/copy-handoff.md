@@ -50,20 +50,17 @@ copy executor and three callers: `copy_entire_pane`, `copy_viewport`, and
 
 ## Remaining work and constraints
 
-- Gate 6: inspect exact missing lines from the current coverage data using
-  `coverage report -m copy_executor.py copy_selector.py tmux.py`. The Termux
-  runner deletes its temporary JSON summary, but leaves coverage.py's default
-  `.coverage` data file. If that data is absent or stale, rerun
-  `test-runner coverage` first.
+- The detailed three-module report was retrieved. It identified
+  `copy_executor.py:40, 74-88`, `copy_selector.py:9-10, 15-16`, and
+  `tmux.py:63-64, 103, 124` as missing statements; see Runtime Log §27.
+- Targeted regression cases covering those exact statements have been added,
+  but have **not yet been run**. Run the full coverage target and review the
+  refreshed missing-line/branch counts before marking coverage complete.
 - The source/helper-template audit found no active `cpy_*` function
-  definitions or invocation in the inspected production path. The nine stale
+  definitions or invocations in the inspected production path. The nine stale
   operational guides were reconciled; old names remain in historical research
   and progress records plus deliberate negative regression assertions
   (Runtime Log §25).
-- Source/test inspection suggests edge cases worth checking include missing
-  `pane_id`, empty non-subset capture output, tmux/clipboard subprocess
-  failures, and CRLF or unterminated final rows in selector parsing. These are
-  candidates, not confirmed exact coverage misses.
 - `Patch Failed` subset selection remains deferred. The production subset
   runtime check used a controlled progress marker, not a real `Patch Failed`
   output range.
@@ -71,8 +68,6 @@ copy executor and three callers: `copy_entire_pane`, `copy_viewport`, and
   or imply behavior there has been verified.
 - tmux's native `load-buffer -w` terminal clipboard path remains untested;
   retain the proven `termux-clipboard-set` endpoint.
-- Do not mark the line-specific coverage audit complete from aggregate
-  percentages alone.
 
 
 ## Fixed workflow constraints
@@ -85,7 +80,7 @@ copy executor and three callers: `copy_entire_pane`, `copy_viewport`, and
 - Continue using the repository's connected GitHub workflow for remote
   commits; check the current branch tip and affected blob SHAs before mutation.
 
-**Next action:** Run `coverage report -m copy_executor.py copy_selector.py tmux.py`
-from the TKM repository root to inspect exact missed lines. If the `.coverage`
-data is absent or stale, run `test-runner coverage` first. Then verify the
-final diff, branch state, and commit history.
+**Next action:** Run `test-runner coverage && coverage report -m copy_executor.py copy_selector.py tmux.py`
+from the TKM repository root. Review the new test results and remaining
+missing-line/branch counts, then verify the final diff, branch state, and
+commit history.

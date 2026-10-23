@@ -78,3 +78,17 @@ def test_select_pytest_subset_fails_closed_on_unflagged_capture_rows():
 
     assert select_pytest_subset(capture) is None
 
+
+
+def test_select_pytest_subset_preserves_crlf_and_accepts_unterminated_prompt():
+    capture = (
+        "O .......                         [100%]\r\n"
+        "O 7 passed in 0.12s\r\n"
+        "PX current prompt without final newline"
+    )
+    expected = (
+        ".......                         [100%]\r\n"
+        "7 passed in 0.12s\r\n"
+    )
+
+    assert select_pytest_subset(capture) == expected

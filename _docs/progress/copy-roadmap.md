@@ -251,10 +251,13 @@ production actions are runtime-verified in both required contexts.
   runs were user-reported green (Runtime Log §§17, 21).
 - [x] Run the repository's broader test target: `test-runner coverage`
   reported 49 passed and 90% total statement coverage (Runtime Log §23).
-- [ ] Inspect exact missing lines from the current coverage data using
-  `coverage report -m copy_executor.py copy_selector.py tmux.py`. The Termux
-  runner deletes its temporary JSON summary after formatting the aggregate
-  table; use the persisted `.coverage` data, not the temporary report.
+- [x] Retrieve and map exact missing lines from the focused coverage
+  report (Runtime Log §27).
+- [x] Add targeted regression tests for the reported statement paths in the
+  executor CLI/validation, selector line-ending parsing, tmux action rejection,
+  and tmux config-file handling (Runtime Log §27).
+- [ ] Run the full coverage target and inspect the refreshed statement and
+  branch report; tests added in §27 are not yet run.
 - [x] Audit inspected production code and the helper template for executable
   `cpy_*` calls/definitions; none were found. Tests deliberately assert their
   absence.
@@ -264,10 +267,10 @@ production actions are runtime-verified in both required contexts.
 - [ ] Verify the diff, working/ref state, and commit history before calling
   the refactor complete.
 
-**Next action:** Run `coverage report -m copy_executor.py copy_selector.py tmux.py`
-from the TKM repository root to inspect exact missed lines. If the `.coverage`
-data is absent or stale, run `test-runner coverage` first. Then verify the
-final diff, branch state, and commit history.
+**Next action:** Run `test-runner coverage && coverage report -m copy_executor.py copy_selector.py tmux.py`
+from the TKM repository root. Review the new test results and remaining
+missing-line/branch counts, then verify the final diff, branch state, and
+commit history.
 
 **Exit condition:** all three callers use the central native executor, all
 required tests pass, and no legacy copy path remains.

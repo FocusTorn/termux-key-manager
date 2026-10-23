@@ -64,5 +64,39 @@ class TestTmuxReplacement(unittest.TestCase):
         self.assertIn("after", text)
 
 
+    def test_update_tmux_conf_creates_file_when_missing(self):
+        config = 'set -s user-keys[0] "\\e[5;30012~"'
+
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "tmux.conf"
+            self.assertFalse(path.exists())
+
+            with patch("tmux.TMUX_CONF_PATH", path):
+                update_tmux_conf(config)
+
+            text = path.read_text(encoding="utf-8")
+
+        self.assertIn(TMUX_START, text)
+        self.assertIn(config, text)
+        self.assertIn(TMUX_END, text)
+
+    def test_update_tmux_conf_adds_separator_when_file_has_no_final_newline(self):
+        config = 'set -s user-keys[0] "\\e[5;30012~"'
+
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "tmux.conf"
+            path.write_text("before", encoding="utf-8")
+
+            with patch("tmux.TMUX_CONF_PATH", path):
+                update_tmux_conf(config)
+
+            text = path.read_text(encoding="utf-8")
+
+        self.assertTrue(text.startswith("before\n\n"))
+        self.assertIn(TMUX_START, text)
+        self.assertIn(config, text)
+
+
+
 if __name__ == "__main__":
     unittest.main()

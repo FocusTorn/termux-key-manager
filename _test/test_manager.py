@@ -709,3 +709,13 @@ class TestTmuxConfig(unittest.TestCase):
             'bind-key -T root User0',
             config
         )
+
+
+    def test_tmux_config_rejects_unknown_action(self):
+        from tmux import build_tmux_config
+
+        with self.assertRaisesRegex(
+            ValueError,
+            "unknown tmux action: not_registered",
+        ):
+            build_tmux_config(["not_registered"])
