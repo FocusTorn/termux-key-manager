@@ -12,7 +12,7 @@ Read in this order:
 4. Its `roadmap.md` — gates, decisions, dependencies, and complete remaining-work inventory.
 5. Only the progress-log entries cited by the handoff/roadmap.
 
-For the active copy work, start at `_docs/_continuity/features/copy-refactor/handoff.md`.
+For the active copy work, start at `_docs/_continuity/features/copy-refactor/handoff.md`. For duplicate empty prompt filtering across all copy actions, use `_docs/_continuity/features/copy-prompt-dedup/handoff.md`.
 
 ## Canonical file responsibilities
 
@@ -47,6 +47,7 @@ When shell execution is available, run:
 
 ```sh
 bash _docs/_continuity/check.sh copy-refactor
+bash _docs/_continuity/check.sh copy-prompt-dedup
 ```
 
 In connector-only work, verify the actual remote tree, required paths, allowed statuses, PL/D/G references, synchronization markers, and identical next-action lines. Do not claim the checker script itself ran unless it was executed and its output inspected.
@@ -54,7 +55,8 @@ In connector-only work, verify the actual remote tree, required paths, allowed s
 ## TKM project constraints
 
 - The PRD `_docs/PRD/2026-09-23-m-w-select-all-copy.md` governs CPY_ALL/M-w whole-pane copy acceptance: exclude the final shell prompt and everything after it, and preserve all preceding content exactly, including blank lines, trailing whitespace, and earlier prompts.
-- Do not use visible prompt text as the primary delimiter when the protocol boundary is available. Prove the capture representation before selecting a boundary.
+- Duplicate-empty-prompt filtering is a separate shared behavior requirement tracked in `features/copy-prompt-dedup/`. It applies to every copy action, not only CPY_ALL. Remove only redundant empty prompt rows when the prompt identity is the same; preserve distinct prompts even when their command input is empty. Prompt identity includes visible context such as the active project/alias and Git status. Do not confuse a distinct final prompt with a duplicate merely because it is empty.
+- Do not use visible prompt text as the primary delimiter for the CPY_ALL protocol boundary when the protocol boundary is available. Prompt deduplication is a separate post-selection/filtering concern and must not weaken CPY_ALL's cutoff contract.
 - The legacy `cpy_*` shell-helper family is decommissioned. No fallback, parallel implementation, or compatibility path is allowed.
 - Define behavior contracts and write relevant tests before changing implementation. Follow `_docs/development.md`'s source-first workflow and verify generated/runtime behavior separately from unit tests.
 - Root and Emacs-style `copy-mode` are the accepted runtime contexts for the current refactor. `copy-mode-vi` is explicitly out of scope unless scope is authorized to change.
