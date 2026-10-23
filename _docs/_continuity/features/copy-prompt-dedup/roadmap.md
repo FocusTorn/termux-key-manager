@@ -24,7 +24,7 @@ Update the main shared copy orchestrator so every copy action removes redundant 
 
 ## Synchronization
 
-**Progress through:** PL-0002
+**Progress through:** PL-0003
 
 `Progress through` is the newest actual log entry reviewed and reconciled here. Advance only after a material log entry is appended and reconciled.
 
@@ -41,8 +41,8 @@ Update the main shared copy orchestrator so every copy action removes redundant 
 **Status:** IN PROGRESS
 **Requires:** G1 (DONE, PL-0002)
 **Exit condition:** The shared filter and contract tests pass, proving that matching duplicate empty prompts collapse to one, distinct identities survive, and all other text is preserved.
-**Evidence:** PL-0002 records the filter and tests written; execution remains NOT TESTED.
-**Remaining:** Execute the focused contract tests and address any failures before considering this gate DONE.
+**Evidence:** PL-0002 records the filter and tests written. PL-0003 records the first focused run (29 passed, 1 failed) and corrects an assertion that counted two delimiters per context row rather than counting prompt rows.
+**Remaining:** Re-run the corrected focused contract tests and address any further failures before considering this gate DONE.
 
 ### G3 — Integration, regression, and runtime acceptance
 **Status:** NOT STARTED
@@ -85,7 +85,7 @@ Open alternatives/questions: If the active shell's prompt renderer changes layou
 
 1. **Source mapping — complete:** Map all three callers, shared executor, selectors, and clipboard path (PL-0002). The shell prompt renderer is external to this repository.
 2. **Runtime identity confirmation — open:** Inspect actual `capture-pane -pF -S -` output on target Termux/tmux and confirm the P flag marks the context row used by the current two-line prompt.
-3. **Focused contract tests — written / NOT TESTED:** Run the new duplicate-prompt tests and existing selector/executor tests; address failures.
+3. **Focused contract tests — assertion corrected / rerun pending:** The reported failure was an incorrect separator-count expectation; re-run the focused tests to verify the correction (PL-0003).
 4. **Implementation validation — open:** Confirm matching empty prompt groups collapse to one and differing project/alias or Git status, command-bearing prompts, and unknown formats remain unchanged.
 5. **CPY_ALL boundary interaction — source/test written / NOT TESTED:** Confirm the final P-flag cutoff is selected before deduplication, including empty/malformed boundary fail-closed behavior.
 6. **Regression and coverage — open:** Run `./_test/run force` for fresh full-suite execution and `./_test/run coverage` for fresh coverage results.
@@ -94,4 +94,4 @@ Open alternatives/questions: If the active shell's prompt renderer changes layou
 
 ## Next action
 
-**Next action:** In the project checkout, run `./_test/run static test_copy_prompt_dedup.py`, then `./_test/run force` for a fresh full-suite regression and `./_test/run coverage` for coverage; run `bash _docs/_continuity/check.sh copy-prompt-dedup`, then verify all three copy actions in target Termux/tmux with identical-context empty prompts, timestamp-only changes, alias/status changes, and command-bearing prompts.
+**Next action:** Re-run the focused prompt-dedup tests after PL-0003's assertion correction, then run `./_test/run force` for a fresh full-suite regression and `./_test/run coverage`; run `bash _docs/_continuity/check.sh copy-prompt-dedup`, then verify all three copy actions in target Termux/tmux with identical-context empty prompts, timestamp-only changes, alias/status changes, and command-bearing prompts.

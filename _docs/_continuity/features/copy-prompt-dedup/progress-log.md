@@ -56,3 +56,27 @@ Not established:
 Next implication: Run focused contract tests and fresh full-suite regression, then verify actual prompt-row flags and all three copy actions in Termux before acceptance.
 
 Corrects: PL-0001's open source-mapping task is advanced by this entry; no earlier evidence is replaced.
+
+
+## PL-0003 — 2026-10-23 — Corrected prompt-identity test assertion
+
+Status: NOT TESTED
+
+Hypothesis/question: Does the reported failure indicate a filtering defect, or an incorrect assertion in the identity-preservation test?
+
+Setup: User ran the focused tests and reported 29 passed, 1 failed at `test_alias_or_git_status_difference_keeps_distinct_empty_prompts`.
+
+Action: Traced the failure to `selected.count(" | ") == 3`. Each context row contains two ` | ` separators, so three distinct context rows correctly produce a count of six. Replaced the delimiter count with an exact assertion over the three expected timestamped context rows, including their differing alias/status identities.
+
+Observed:
+- The reported value of six is consistent with three context rows, each containing two separators.
+- The failed assertion did not establish that the filter collapsed distinct prompts; it counted separators rather than prompt rows.
+- The corrected assertion directly checks that all three expected rows remain in order with their respective alias and Git status.
+
+Not established:
+- The corrected test has not yet been rerun.
+- Full regression, coverage, continuity-checker output, and live Termux/tmux behavior remain unverified.
+
+Next implication: Re-run the focused prompt-dedup test, then run fresh full-suite regression and coverage before target-runtime acceptance.
+
+Corrects: PL-0002's test-execution status is updated with the failure evidence supplied by the user; earlier source-mapping evidence remains unchanged.

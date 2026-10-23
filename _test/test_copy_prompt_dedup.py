@@ -56,7 +56,16 @@ def test_alias_or_git_status_difference_keeps_distinct_empty_prompts():
     )
     selected = select_viewport(capture)
     assert selected is not None
-    assert selected.count(" | ") == 3
+    context_rows = [
+        line
+        for line in selected.splitlines()
+        if line.startswith(("1526.12 |", "1526.16 |", "1526.20 |"))
+    ]
+    assert context_rows == [
+        "1526.12 | tkm main | ✔",
+        "1526.16 | tkm main | Ø1",
+        "1526.20 | spl main | Ø1",
+    ]
     assert "tkm main | ✔" in selected
     assert "tkm main | Ø1" in selected
     assert "spl main | Ø1" in selected
