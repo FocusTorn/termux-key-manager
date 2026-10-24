@@ -12,19 +12,20 @@ Update the main shared copy orchestrator so every copy action removes redundant 
 
 - [x] Map every copy action and identify its capture, selection, and formatting stages; establish where prompt identity is available (PL-0002).
 - [x] Define prompt identity for the supplied visible prompt layout. Ignore changing display time; compare project/alias, branch, and Git status. Retain unfamiliar layouts rather than guessing (PL-0002).
-- [ ] Add a shared, deterministic filter that removes only redundant adjacent empty prompt rows with matching identity, including duplicates appearing above or below the retained row in the captured/copy range.
-- [ ] Apply the filter to every copy action through the main copy orchestrator/shared path; do not add per-action parallel implementations or revive legacy `cpy_*` helpers.
-- [ ] Preserve one representative of a run of matching empty prompts and preserve every non-empty prompt.
-- [ ] Preserve distinct empty prompts. In particular, a final prompt with a different alias/project or Git status must not be stripped just because the preceding row is also an empty prompt.
-- [ ] Preserve all non-duplicate text, ordering, blank output lines, trailing whitespace, and line endings according to each copy action's existing contract.
-- [ ] Add contract tests for duplicates above and below; repeated runs of 2+; distinct aliases; distinct Git status; same alias with different Git status; non-empty prompt rows; prompt-like output; and boundaries/empty selections.
+- [x] Add the shared deterministic filter for redundant adjacent empty prompt rows with matching identity (PL-0002).
+- [x] Apply the filter to all three copy actions through the shared path; do not revive legacy `cpy_*` helpers (PL-0002; passing test output reported in PL-0004).
+- [x] Preserve one representative of matching empty-prompt runs and preserve command-bearing prompts (PL-0002; passing test output reported in PL-0004).
+- [x] Preserve distinct empty prompts when alias/project or Git status differs (PL-0002; passing test output reported in PL-0004).
+- [x] Preserve non-duplicate text, ordering, trailing whitespace, and line endings according to the exercised contracts (PL-0002; passing test output reported in PL-0004).
+- [x] Add core contract tests for timestamp-only differences, distinct aliases/statuses, command-bearing prompts, unrecognized or unflagged prompt-like rows, line endings/whitespace, and all three copy actions (PL-0002; test pass reported in PL-0004).
+- [ ] Add or confirm direct boundary/empty-selection coverage and explicit CPY_ALL cutoff interaction coverage.
 - [ ] Verify that CPY_ALL still uses its protocol-flagged final prompt boundary and that deduplication does not remove or move the cutoff.
 - [ ] Run the focused tests through the project runner, the full regression suite, relevant coverage, and target Termux/tmux runtime checks for every copy action.
 - [ ] Synchronize research/development documentation and continuity records with observed behavior; run the continuity checker.
 
 ## Synchronization
 
-**Progress through:** PL-0003
+**Progress through:** PL-0004
 
 `Progress through` is the newest actual log entry reviewed and reconciled here. Advance only after a material log entry is appended and reconciled.
 
@@ -38,18 +39,18 @@ Update the main shared copy orchestrator so every copy action removes redundant 
 **Remaining:** No source-mapping work remains; confirm live P-flag placement as part of G3 runtime acceptance.
 
 ### G2 — Shared filter and contract tests
-**Status:** IN PROGRESS
+**Status:** DONE (PL-0004)
 **Requires:** G1 (DONE, PL-0002)
 **Exit condition:** The shared filter and contract tests pass, proving that matching duplicate empty prompts collapse to one, distinct identities survive, and all other text is preserved.
-**Evidence:** PL-0002 records the filter and tests written. PL-0003 records the first focused run (29 passed, 1 failed) and corrects an assertion that counted two delimiters per context row rather than counting prompt rows.
-**Remaining:** Re-run the corrected focused contract tests and address any further failures before considering this gate DONE.
+**Evidence:** PL-0002 records the shared implementation and contract tests; PL-0003 identifies the original failure as an incorrect separator-count assertion; PL-0004 records the user's subsequent report of 71 passing tests and 94% aggregate coverage.
+**Remaining:** Finish or explicitly scope the boundary/empty-selection tests tracked in the acceptance checklist. The exact invocation was not included, so the forced full-regression mode remains tracked under G3.
 
 ### G3 — Integration, regression, and runtime acceptance
-**Status:** NOT STARTED
+**Status:** IN PROGRESS
 **Requires:** G2
 **Exit condition:** Every copy action routes through the shared filter; focused and full regression tests, relevant coverage, and target Termux/tmux runtime checks pass; continuity and user documentation agree.
-**Evidence:** PL-0002 records source-level boundary handling; test execution and target-runtime acceptance remain open.
-**Remaining:** Exercise every copy action, including CPY_ALL, in accepted runtime contexts; confirm the final distinct prompt remains and redundant matching empty prompts do not.
+**Evidence:** PL-0002 records source-level selection-before-dedup handling; PL-0004 records a user-reported 71-pass run and 94% aggregate coverage. The exact test command was omitted.
+**Remaining:** Run `./_test/run force` explicitly; run the continuity checker; verify actual P-flag placement, CPY_ALL cutoff interaction, and exact clipboard content for every copy action in target Termux/tmux.
 
 ## Blocked
 
@@ -85,13 +86,13 @@ Open alternatives/questions: If the active shell's prompt renderer changes layou
 
 1. **Source mapping — complete:** Map all three callers, shared executor, selectors, and clipboard path (PL-0002). The shell prompt renderer is external to this repository.
 2. **Runtime identity confirmation — open:** Inspect actual `capture-pane -pF -S -` output on target Termux/tmux and confirm the P flag marks the context row used by the current two-line prompt.
-3. **Focused contract tests — assertion corrected / rerun pending:** The reported failure was an incorrect separator-count expectation; re-run the focused tests to verify the correction (PL-0003).
-4. **Implementation validation — open:** Confirm matching empty prompt groups collapse to one and differing project/alias or Git status, command-bearing prompts, and unknown formats remain unchanged.
-5. **CPY_ALL boundary interaction — source/test written / NOT TESTED:** Confirm the final P-flag cutoff is selected before deduplication, including empty/malformed boundary fail-closed behavior.
-6. **Regression and coverage — open:** Run `./_test/run force` for fresh full-suite execution and `./_test/run coverage` for fresh coverage results.
+3. **Test execution — passing result reported, invocation unspecified:** PL-0004 records 71 passed and 94% coverage. Run `./_test/run force` explicitly to establish a fresh full-suite regression result; retain the original failed run as historical evidence.
+4. **Core contract validation — passing result reported:** Current tests cover timestamp-only duplicates, differing identities, command-bearing prompts, unknown/unflagged formats, whitespace/line endings, and all three action paths (PL-0002, PL-0004). Boundary/empty-selection coverage still needs confirmation.
+5. **CPY_ALL boundary interaction — source-level handling inspected / runtime NOT TESTED:** Confirm the final P-flag cutoff remains selected before deduplication, including empty/malformed boundary fail-closed behavior.
+6. **Regression and coverage — partial evidence:** PL-0004 reports 71 passed and 94% coverage, but the command is unknown. Run `./_test/run force` explicitly; coverage has been reported but is not independently tied to that invocation.
 7. **Target runtime — open:** Exercise all three actions in accepted root and Emacs-style `copy-mode` contexts; verify exact clipboard content, preserving distinct alias/status prompts while removing only redundant matching empty prompts. `copy-mode-vi` remains out of scope.
 8. **Continuity verification — open:** Run `bash _docs/_continuity/check.sh copy-prompt-dedup` in the project checkout and record its actual output.
 
 ## Next action
 
-**Next action:** Re-run the focused prompt-dedup tests after PL-0003's assertion correction, then run `./_test/run force` for a fresh full-suite regression and `./_test/run coverage`; run `bash _docs/_continuity/check.sh copy-prompt-dedup`, then verify all three copy actions in target Termux/tmux with identical-context empty prompts, timestamp-only changes, alias/status changes, and command-bearing prompts.
+**Next action:** Run `./_test/run force` for an explicitly identified fresh full-suite regression, then run `bash _docs/_continuity/check.sh copy-prompt-dedup`; verify actual P-flag placement, CPY_ALL's protocol cutoff, and exact clipboard output for all three copy actions in Termux/tmux. Add or confirm boundary/empty-selection contract coverage before closeout.

@@ -80,3 +80,35 @@ Not established:
 Next implication: Re-run the focused prompt-dedup test, then run fresh full-suite regression and coverage before target-runtime acceptance.
 
 Corrects: PL-0002's test-execution status is updated with the failure evidence supplied by the user; earlier source-mapping evidence remains unchanged.
+
+
+## PL-0004 — 2026-10-23 — Passing test and coverage results reported
+
+Status: PASS
+
+Hypothesis/question: Does the corrected prompt-identity assertion pass with the shared copy filter and contract tests?
+
+Setup: User supplied a test summary and per-module coverage report after PL-0003 corrected the separator-count assertion. The command line was not included in the report.
+
+Action: Recorded the user-provided test and coverage result against the implementation at the current main tip.
+
+Observed:
+- The test runner reported `71 passed in 0.64s`.
+- A JSON coverage report was written.
+- Aggregate coverage was 94% across 464 statements, with 18 missed statements, 186 branches, and 18 partially covered branches.
+- `copy_executor.py` reported 97% coverage and `copy_selector.py` reported 96%.
+
+Interpretation:
+- The user-reported test invocation passed all 71 tests it executed. This resolves the observed failing-assertion checkpoint at test-run level.
+- The output includes coverage metrics, but the exact command and selected test scope were not included. This entry therefore does not claim that the explicit `./_test/run force` mode was run.
+- The report is evidence for the test invocation as shown, not for live Termux/tmux behavior.
+
+Not established:
+- Whether the invocation was the dedicated prompt-dedup test selection or the explicit forced full-regression mode.
+- Continuity-checker output.
+- Live placement of the tmux P flag in the active shell prompt, exact clipboard payloads, and runtime behavior of all three copy actions.
+- Direct runtime verification of CPY_ALL's protocol-flagged cutoff interaction with deduplication.
+
+Next implication: Run `./_test/run force` explicitly, run `bash _docs/_continuity/check.sh copy-prompt-dedup`, then verify the capture flags and exact clipboard output for all three copy actions in Termux/tmux.
+
+Corrects: PL-0003's statement that the corrected assertion had not been rerun. The earlier failed run remains preserved as history.
