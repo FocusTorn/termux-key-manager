@@ -20,12 +20,13 @@ Update the main shared copy orchestrator so every copy action removes redundant 
 - [x] Add core contract tests for timestamp-only differences, distinct aliases/statuses, command-bearing prompts, unrecognized or unflagged prompt-like rows, line endings/whitespace, and all three copy actions (PL-0002; test pass reported in PL-0004).
 - [ ] Add or confirm direct boundary/empty-selection coverage and explicit CPY_ALL cutoff interaction coverage.
 - [ ] Verify that CPY_ALL still uses its protocol-flagged final prompt boundary and that deduplication does not remove or move the cutoff.
-- [ ] Run the focused tests through the project runner, the full regression suite, relevant coverage, and target Termux/tmux runtime checks for every copy action.
+- [x] Run the fresh full-suite regression with `./_test/run force` and collect its coverage report: 71 passed, 94% total coverage (PL-0005).
+- [ ] Verify target Termux/tmux runtime behavior for every copy action, including exact clipboard contents and prompt-identity placement.
 - [ ] Synchronize research/development documentation and continuity records with observed behavior; run the continuity checker.
 
 ## Synchronization
 
-**Progress through:** PL-0004
+**Progress through:** PL-0005
 
 `Progress through` is the newest actual log entry reviewed and reconciled here. Advance only after a material log entry is appended and reconciled.
 
@@ -42,15 +43,15 @@ Update the main shared copy orchestrator so every copy action removes redundant 
 **Status:** DONE (PL-0004)
 **Requires:** G1 (DONE, PL-0002)
 **Exit condition:** The shared filter and contract tests pass, proving that matching duplicate empty prompts collapse to one, distinct identities survive, and all other text is preserved.
-**Evidence:** PL-0002 records the shared implementation and contract tests; PL-0003 identifies the original failure as an incorrect separator-count assertion; PL-0004 records the user's subsequent report of 71 passing tests and 94% aggregate coverage.
-**Remaining:** Finish or explicitly scope the boundary/empty-selection tests tracked in the acceptance checklist. The exact invocation was not included, so the forced full-regression mode remains tracked under G3.
+**Evidence:** PL-0002 records the shared implementation and contract tests; PL-0003 identifies the original failure as an incorrect separator-count assertion; PL-0004 and PL-0005 record passing test results, and PL-0005 specifically confirms `./_test/run force` passed all 71 tests with 94% aggregate coverage.
+**Remaining:** Direct boundary/empty-selection and explicit CPY_ALL cutoff coverage remain in the overall acceptance checklist; do not infer these edge cases are independently covered merely from the passing full suite.
 
 ### G3 — Integration, regression, and runtime acceptance
 **Status:** IN PROGRESS
 **Requires:** G2
 **Exit condition:** Every copy action routes through the shared filter; focused and full regression tests, relevant coverage, and target Termux/tmux runtime checks pass; continuity and user documentation agree.
-**Evidence:** PL-0002 records source-level selection-before-dedup handling; PL-0004 records a user-reported 71-pass run and 94% aggregate coverage. The exact test command was omitted.
-**Remaining:** Run `./_test/run force` explicitly; run the continuity checker; verify actual P-flag placement, CPY_ALL cutoff interaction, and exact clipboard content for every copy action in target Termux/tmux.
+**Evidence:** PL-0002 records source-level selection-before-dedup handling; PL-0005 records the explicitly requested forced full-suite run passing all 71 tests with 94% aggregate coverage.
+**Remaining:** Run the continuity checker; verify actual P-flag placement, CPY_ALL cutoff interaction and empty/malformed boundaries, and exact clipboard content for every copy action in target Termux/tmux.
 
 ## Blocked
 
@@ -86,13 +87,13 @@ Open alternatives/questions: If the active shell's prompt renderer changes layou
 
 1. **Source mapping — complete:** Map all three callers, shared executor, selectors, and clipboard path (PL-0002). The shell prompt renderer is external to this repository.
 2. **Runtime identity confirmation — open:** Inspect actual `capture-pane -pF -S -` output on target Termux/tmux and confirm the P flag marks the context row used by the current two-line prompt.
-3. **Test execution — passing result reported, invocation unspecified:** PL-0004 records 71 passed and 94% coverage. Run `./_test/run force` explicitly to establish a fresh full-suite regression result; retain the original failed run as historical evidence.
+3. **Forced full-suite regression — PASS:** The user-reported `./_test/run force` run passed 71 tests in 0.61s with 94% aggregate coverage (PL-0005). The earlier failed assertion run remains preserved as historical evidence.
 4. **Core contract validation — passing result reported:** Current tests cover timestamp-only duplicates, differing identities, command-bearing prompts, unknown/unflagged formats, whitespace/line endings, and all three action paths (PL-0002, PL-0004). Boundary/empty-selection coverage still needs confirmation.
 5. **CPY_ALL boundary interaction — source-level handling inspected / runtime NOT TESTED:** Confirm the final P-flag cutoff remains selected before deduplication, including empty/malformed boundary fail-closed behavior.
-6. **Regression and coverage — partial evidence:** PL-0004 reports 71 passed and 94% coverage, but the command is unknown. Run `./_test/run force` explicitly; coverage has been reported but is not independently tied to that invocation.
+6. **Coverage — PASS:** The coverage report accompanying the forced regression reported 94% overall statement coverage across 464 statements, 18 missed statements, 186 branches, and 18 partially covered branches; `copy_executor.py` 97%, `copy_selector.py` 96% (PL-0005).
 7. **Target runtime — open:** Exercise all three actions in accepted root and Emacs-style `copy-mode` contexts; verify exact clipboard content, preserving distinct alias/status prompts while removing only redundant matching empty prompts. `copy-mode-vi` remains out of scope.
 8. **Continuity verification — open:** Run `bash _docs/_continuity/check.sh copy-prompt-dedup` in the project checkout and record its actual output.
 
 ## Next action
 
-**Next action:** Run `./_test/run force` for an explicitly identified fresh full-suite regression, then run `bash _docs/_continuity/check.sh copy-prompt-dedup`; verify actual P-flag placement, CPY_ALL's protocol cutoff, and exact clipboard output for all three copy actions in Termux/tmux. Add or confirm boundary/empty-selection contract coverage before closeout.
+**Next action:** Run `bash _docs/_continuity/check.sh copy-prompt-dedup`; then verify actual P-flag placement and exact clipboard output for all three copy actions in Termux/tmux, including CPY_ALL's protocol cutoff and empty/malformed boundary behavior. Add or confirm direct boundary/empty-selection contract coverage before closeout.

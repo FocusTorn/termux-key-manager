@@ -112,3 +112,35 @@ Not established:
 Next implication: Run `./_test/run force` explicitly, run `bash _docs/_continuity/check.sh copy-prompt-dedup`, then verify the capture flags and exact clipboard output for all three copy actions in Termux/tmux.
 
 Corrects: PL-0003's statement that the corrected assertion had not been rerun. The earlier failed run remains preserved as history.
+
+
+## PL-0005 — 2026-10-23 — Forced full regression and coverage pass
+
+Status: PASS
+
+Hypothesis/question: Does the explicitly requested fresh full-suite regression pass after the prompt-identity assertion correction?
+
+Setup: After PL-0004, the user was asked to run `./_test/run force` and supplied the resulting test summary and coverage report.
+
+Action: Recorded the user-provided result for the forced regression invocation.
+
+Observed:
+- The test runner reported `71 passed in 0.61s`.
+- A JSON coverage report was written.
+- Aggregate coverage was 94% across 464 statements, with 18 missed statements, 186 branches, and 18 partially covered branches.
+- `copy_executor.py` reported 97% coverage and `copy_selector.py` reported 96%.
+
+Interpretation:
+- The forced full-suite regression passed all 71 tests reported by the runner.
+- The accompanying coverage report totals 94% statement coverage; the earlier PL-0004 report showed the same totals with a slightly different elapsed time.
+- This test evidence does not establish live Termux/tmux capture flags, actual clipboard contents, or prompt-renderer behavior.
+
+Not established:
+- Continuity-checker output.
+- Actual placement of the tmux P flag in the active shell prompt.
+- Exact clipboard output of all three copy actions in the target runtime.
+- Direct verification of CPY_ALL cutoff behavior at empty or malformed boundaries, and dedicated boundary/empty-selection test coverage.
+
+Next implication: Run `bash _docs/_continuity/check.sh copy-prompt-dedup`, then complete target Termux/tmux acceptance checks for all three copy actions, including CPY_ALL's cutoff and edge boundaries.
+
+Corrects: PL-0004's open question about whether the reported 71-test result came from the explicit forced regression invocation. The PL-0004 result remains valid as an earlier run.
